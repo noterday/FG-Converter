@@ -85,15 +85,15 @@ def build_spritesheet(outfile, airfile, outfolder):
 		images = [(Image.open(sprite[0]), sprite[1], sprite[2]) for sprite in action_sprites]
 		widths, heights = zip(*(i[0].size for i in images))
 
-		total_width = sum(widths)
+		max_width = max(widths)
 		max_height = max(heights)
 
-		new_im = Image.new('RGBA', (total_width, max_height), (0,0,0,0))
+		new_im = Image.new('RGBA', (max_width*len(images), max_height), (0,0,0,0))
 
 		x_offset = 0
 		for im in images:
 			new_im.paste(add_alpha(im[0]), (x_offset,max_height-im[0].size[1]), mask=0)
-			x_offset += im[0].size[0]
+			x_offset += max_width
 			
 
 		new_im.save(outfolder + "/" + str(action_nb) + "_strip" + str(len(images)) +'.png')
