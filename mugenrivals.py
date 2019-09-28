@@ -96,7 +96,7 @@ def build_spritesheet(outfile, airfile, outfolder):
 			x_offset += im[0].size[0]
 			
 
-		new_im.save(outfolder + "/" + str(action_nb) + '.png')
+		new_im.save(outfolder + "/" + str(action_nb) + "_strip" + str(len(images)) +'.png')
 			
 """
 	Get an item from the outfile dictionary
