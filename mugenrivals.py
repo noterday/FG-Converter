@@ -88,15 +88,21 @@ def build_spritesheet(outfile, airfile, outfolder):
 		max_width = max(widths)
 		max_height = max(heights)
 
-		new_im = Image.new('RGBA', (max_width*len(images), max_height), (0,0,0,0))
+		spritesheet = Image.new('RGBA', (max_width*len(images), max_height), (0,0,0,0))
 
 		x_offset = 0
 		for im in images:
-			new_im.paste(add_alpha(im[0]), (x_offset,max_height-im[0].size[1]), mask=0)
+			spritesheet.paste(add_alpha(im[0]), (x_offset,max_height-im[0].size[1]), mask=0)
 			x_offset += max_width
 			
-
-		new_im.save(outfolder + "/" + str(action_nb) + "_strip" + str(len(images)) +'.png')
+		#make the hurtbox sheet
+		alpha = spritesheet.getchannel("A")
+		hurtboxsheet = Image.new('RGBA', (max_width*len(images), max_height), (0,255,0,255))
+		hurtboxsheet.putalpha(alpha)
+		
+		
+		spritesheet.save(outfolder + "/" + str(action_nb) + "_strip" + str(len(images)) +'.png')
+		hurtboxsheet.save(outfolder + "/" + str(action_nb) + "_hurt_strip" + str(len(images)) +'.png')
 			
 """
 	Get an item from the outfile dictionary
