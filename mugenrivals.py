@@ -12,7 +12,7 @@ from PIL import Image
 	The data is a 3 item list of the sprite filename and it's x and y offsets.
 """
 def parse_outfile(filename):
-	f = open(filename)
+	f = open(filename, encoding="latin-1")
 	lines = f.readlines()
 	outfile_sprite_data = {}
 	sprite_section = False
@@ -43,7 +43,7 @@ def add_line_outfile(line, outfile_sprite_data):
 	Parse the char.air file of a Mugen character
 """	
 def parse_airfile(filename):
-	f = open(filename)
+	f = open(filename, encoding="latin-1")
 	lines = f.readlines()
 	air_file_data = {}
 	action_nb = -1
