@@ -3,7 +3,6 @@ from PIL import Image
 
 
 
-
 """
 	Parse the outfile.def of a Mugen character
 	
@@ -136,9 +135,10 @@ def add_alpha(image):
 	
 	
 def main():
-	folder = input("Enter the Mugen character folder path: ")
+
+	folder = input("Path to mugen folder: ")
 	if not os.path.exists(folder):
-		print("The folder does not exist.")
+		input("The folder does not exist.")
 		return
 		
 	sff_path = next(path for path in glob.glob(folder + "/*.sff") 
