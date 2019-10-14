@@ -1,5 +1,5 @@
 # mugenrivals
-Converts a Mugen character's folders into spritesheets for Rivals of Aether. Work in progress.
+Converts a Mugen character's folders into spritesheets for Rivals of Aether. Work in progress and mostly untested.
   
 ## How to use
 Run mugenrivals.exe and enter the path to the character folder when asked.  
