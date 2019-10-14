@@ -2,8 +2,10 @@
 Converts a Mugen character's folders into spritesheets for Rivals of Aether. Work in progress.
   
 ## How to use
-Need Python 3 installed and [Pillow](https://github.com/python-pillow/Pillow).  
-Run mugenrivals.py and type the path to a mugen character folder when asked.
+Run mugenrivals.exe and enter the path to the character folder when asked.  
+  
+To use the source, use python3 and install [Pillow](https://github.com/python-pillow/Pillow) through Pip.
   
 ## Todo
--Create matching gml scripts for each strip to handle animation timing
+-Convert hitboxes
+-Convert color palettes
