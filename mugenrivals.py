@@ -185,7 +185,6 @@ def main():
 		build_spritesheet(outfile, action_nb, frames, outfolder)
 		gml = open(outfolder + "/" + str(action_nb) + ".gml", "w+")
 		gml.write("//Section created by mugenrivals script.\n")
-		print(action_nb)
 		create_gml_windows_section(gml, frames)
 		gml.close()
 	
