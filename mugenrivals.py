@@ -78,31 +78,31 @@ def add_frame(action_nb, line, air_file_data):
 """
 	Create spritesheet for every action of the character using the parsed mugen .sff and .air file
 """	
-def build_spritesheet(outfile, airfile, outfolder):
-	for action_nb, frames in airfile.items():
-		action_sprites = [get_frame(outfile,frame) for frame in frames]
-		images = [(Image.open(sprite[0]), sprite[1], sprite[2]) for sprite in action_sprites]
-		widths, heights = zip(*(i[0].size for i in images))
+def build_spritesheet(outfile, action_nb, frames, outfolder):
+	action_sprites = [get_frame(outfile,frame) for frame in frames]
+	images = [(Image.open(sprite[0]), sprite[1], sprite[2]) for sprite in action_sprites]
+	widths, heights = zip(*(i[0].size for i in images))
 
-		max_width = max(widths)
-		max_height = max(heights)
+	max_width = max(widths)
+	max_height = max(heights)
 
-		spritesheet = Image.new('RGBA', (max_width*len(images), max_height), (0,0,0,0))
+	spritesheet = Image.new('RGBA', (max_width*len(images), max_height), (0,0,0,0))
 
-		x_offset = 0
-		for im in images:
-			spritesheet.paste(add_alpha(im[0]), (x_offset,max_height-im[0].size[1]), mask=0)
-			x_offset += max_width
-			
-		#make the hurtbox sheet
-		alpha = spritesheet.getchannel("A")
-		hurtboxsheet = Image.new('RGBA', (max_width*len(images), max_height), (0,255,0,255))
-		hurtboxsheet.putalpha(alpha)
+	x_offset = 0
+	for im in images:
+		spritesheet.paste(add_alpha(im[0]), (x_offset,max_height-im[0].size[1]), mask=0)
+		x_offset += max_width
 		
-		
-		spritesheet.save(outfolder + "/" + str(action_nb) + "_strip" + str(len(images)) +'.png')
-		hurtboxsheet.save(outfolder + "/" + str(action_nb) + "_hurt_strip" + str(len(images)) +'.png')
-			
+	#make the hurtbox sheet
+	alpha = spritesheet.getchannel("A")
+	hurtboxsheet = Image.new('RGBA', (max_width*len(images), max_height), (0,255,0,255))
+	hurtboxsheet.putalpha(alpha)
+	
+	
+	spritesheet.save(outfolder + "/" + str(action_nb) + "_strip" + str(len(images)) +'.png')
+	hurtboxsheet.save(outfolder + "/" + str(action_nb) + "_hurt_strip" + str(len(images)) +'.png')
+
+	
 """
 	Get an item from the outfile dictionary
 	
@@ -133,10 +133,34 @@ def add_alpha(image):
 	return image
 	
 	
-	
+def create_gml_windows_section(gml, frames):
+	gml.write("//Windows Timing\n")
+	windows = []
+	timings = [frame[4] for frame in frames]
+	timings.append(-2)
+	current_window_length = -1 #this would be 10 for kfm action 0
+	counter = 0
+	starting_frame = 0
+	for timing in timings:
+		counter += 1
+		if current_window_length != timing:
+			windows.append((current_window_length*counter, counter, starting_frame))
+			current_window_length = timing
+			starting_frame += counter
+			counter = 0
+	windows = windows[1:]
+	for i in range(0, len(windows)):
+		gml.write("set_window_value(AT_ATTACK, " + str(i) + ", AG_WINDOW_LENGTH," + str(windows[i][0]) + ");\n")
+		gml.write("set_window_value(AT_ATTACK, " + str(i) + ", AG_WINDOW_ANIM_FRAMES," + str(windows[i][1]) + ");\n")
+		if i != 0:
+			gml.write("set_window_value(AT_ATTACK, " + str(i) + ", AG_WINDOW_ANIM_FRAME_START," + str(windows[i][2]) + ");\n")
+		gml.write("\n")
+
+
 def main():
 
 	folder = input("Path to mugen folder: ")
+	outfolder = folder + "_output"
 	if not os.path.exists(folder):
 		input("The folder does not exist.")
 		return
@@ -151,13 +175,19 @@ def main():
 	subprocess.run(["mugen/sff2png.exe", sff_path, "working/outfile", "-f 0"])
 	
 	outfile_path = "working/outfile-sff.def" 
-	outfolder = folder + "_output"
 	if not os.path.exists(folder + "_output"):
 		os.makedirs(folder + "_output")
 	
 	outfile = parse_outfile(outfile_path)
 	airfile = parse_airfile(air_path)
-	build_spritesheet(outfile, airfile, outfolder)
+	
+	for action_nb, frames in airfile.items():
+		build_spritesheet(outfile, action_nb, frames, outfolder)
+		gml = open(outfolder + "/" + str(action_nb) + ".gml", "w+")
+		gml.write("//Section created by mugenrivals script.\n")
+		print(action_nb)
+		create_gml_windows_section(gml, frames)
+		gml.close()
 	
 	
 	input("Done!")
