@@ -2,13 +2,12 @@ import os, re, subprocess, glob
 from PIL import Image
 
 
-
 """
 	Parse the outfile.def of a Mugen character
 	
-	Returns a 2D dictionary where the first key 
-	is the group id and the second key is the sprite id of a sprite. 
-	The data is a 3 item list of the sprite filename and it's x and y offsets.
+	Return a 2D dictionary where the first key 
+	is the group id and the second key is the sprite id of a sprite
+	The data is a 3 item list of the sprite filename and it's x and y offsets
 """
 def parse_outfile(filename):
 	f = open(filename, encoding="latin-1")
@@ -23,7 +22,8 @@ def parse_outfile(filename):
 		if re.match("[0-9]+,[0-9]+,working/outfile[0-9]+.png,-*[0-9]+,-*[0-9]+", line) and sprite_section:
 			add_line_outfile(line, outfile_sprite_data)
 	return outfile_sprite_data
-	
+
+
 """
 	Add a single line of the outfile to the outfile dict
 """
@@ -37,25 +37,53 @@ def add_line_outfile(line, outfile_sprite_data):
 	if group_id not in outfile_sprite_data.keys():
 		outfile_sprite_data[group_id] = {}
 	outfile_sprite_data[group_id][sprite_id] = [sprite_name, offset_x, offset_y]
-	
+
+
 """
 	Parse the char.air file of a Mugen character
+	
+	Return a dictionary where each key is a mugen action number,
+	and the values are a 2d dictionary containing each frame's information
+	in a sequence
 """	
 def parse_airfile(filename):
 	f = open(filename, encoding="latin-1")
 	lines = f.readlines()
-	air_file_data = {}
-	action_nb = -1
 	
+	air_file_data = {}
+	hitboxes = {}
+	hurtboxes = {}
+	
+	action_nb = -1
 	for line in lines:
 		line = line.strip().rstrip("\n").partition(";")[0]
+		line = line.replace(" ", "")
 		if re.match("[Begin Action [0-9]+]", line):
 			action_nb = int(line.lstrip("[Begin Action").rstrip("]"))
-			
-		line = line.replace(" ", "")
+			if action_nb not in air_file_data.keys():
+				air_file_data[action_nb] = []
+		
 		if re.match("[0-9]+,[0-9]+,-*[0-9]+,-*[0-9]+,-*[0-9]+,*.*", line):
 			add_frame(action_nb, line, air_file_data)
-	return air_file_data
+			
+		if re.match("Clsn2\[.+\]=" , line):
+			add_box(hurtboxes, action_nb, len(air_file_data[action_nb]), line.partition("=")[2])
+		elif re.match("Clsn1\[.+\]=" , line):
+			add_box(hitboxes, action_nb, len(air_file_data[action_nb]), line.partition("=")[2])
+
+	return air_file_data, hitboxes, hurtboxes
+
+
+def add_box(box_dict, action_nb, frame_nb, data):
+	if action_nb not in box_dict:
+		box_dict[action_nb] = []
+	if frame_nb == 0:
+		frame_nb = -1
+	else:
+		frame_nb += 1
+	data = data.split(",")
+	box_dict[action_nb].append((frame_nb, data[0], data[1], data[2], data[3])) #parse data
+
 
 """
 	Add a line of animation data to the air file data
@@ -70,15 +98,15 @@ def add_frame(action_nb, line, air_file_data):
 	flags = ""
 	if len(line) == 6:
 		flags = line[5]
-	if action_nb not in air_file_data.keys():
-		air_file_data[action_nb] = []
 	air_file_data[action_nb].append([group_id, sprite_id, offset_x, offset_y, duration, flags])
-	
-	
+
+
 """
 	Create spritesheet for every action of the character using the parsed mugen .sff and .air file
 """	
 def build_spritesheet(outfile, action_nb, frames, outfolder):
+	if not frames:
+		return
 	action_sprites = [get_frame(outfile,frame) for frame in frames]
 	images = [(Image.open(sprite[0]), sprite[1], sprite[2]) for sprite in action_sprites]
 	widths, heights = zip(*(i[0].size for i in images))
@@ -98,15 +126,14 @@ def build_spritesheet(outfile, action_nb, frames, outfolder):
 	hurtboxsheet = Image.new('RGBA', (max_width*len(images), max_height), (0,255,0,255))
 	hurtboxsheet.putalpha(alpha)
 	
-	
 	spritesheet.save(outfolder + "/" + str(action_nb) + "_strip" + str(len(images)) +'.png')
 	hurtboxsheet.save(outfolder + "/" + str(action_nb) + "_hurt_strip" + str(len(images)) +'.png')
 
-	
+
 """
 	Get an item from the outfile dictionary
 	
-	Returns the value for outfile000 if the group and sprite numbers don't exist to prevent crashes
+	Return outfile000 as the default if either the group or image id don't exist
 """
 def get_frame(outfile, frame):
 	if frame[0] not in outfile.keys():
@@ -114,7 +141,8 @@ def get_frame(outfile, frame):
 	if frame[1] not in outfile[frame[0]].keys():
 		return ("working/outfile000.png", 0, 0)
 	return outfile[frame[0]][frame[1]]
-	
+
+
 """
 	Modify a given image to make the color of the first pixel transparent
 """
@@ -131,8 +159,12 @@ def add_alpha(image):
 
 	image.putdata(newData)
 	return image
-	
-	
+
+
+"""
+	Add a new portion to an animation's gml file containing window timing, 
+	based on the mugen airfile animation timing
+"""
 def create_gml_windows_section(gml, frames):
 	gml.write("//Windows Timing\n")
 	windows = []
@@ -179,7 +211,7 @@ def main():
 		os.makedirs(folder + "_output")
 	
 	outfile = parse_outfile(outfile_path)
-	airfile = parse_airfile(air_path)
+	airfile, hitboxes, hurtboxes = parse_airfile(air_path)
 	
 	for action_nb, frames in airfile.items():
 		build_spritesheet(outfile, action_nb, frames, outfolder)
