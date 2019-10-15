@@ -73,7 +73,9 @@ def parse_airfile(filename):
 
 	return air_file_data, hitboxes, hurtboxes
 
-
+"""
+	Parse a line of hitbox information and add it to the given dictionary.
+"""
 def add_box(box_dict, action_nb, frame_nb, data):
 	if action_nb not in box_dict:
 		box_dict[action_nb] = []
@@ -164,29 +166,71 @@ def add_alpha(image):
 """
 	Add a new portion to an animation's gml file containing window timing, 
 	based on the mugen airfile animation timing
+	
+	Returns a list of int representing the starting frame of each window
 """
 def create_gml_windows_section(gml, frames):
 	gml.write("//Windows Timing\n")
+	gml.write('set_attack_value(AT_ATTACK, AG_SPRITE, sprite_get("attack"));\n')
+	gml.write('set_attack_value(AT_ATTACK, AG_HURTBOX_SPRITE, sprite_get("attack_hurt"));\n')
 	windows = []
 	timings = [frame[4] for frame in frames]
 	timings.append(-2)
 	current_window_length = -1 #this would be 10 for kfm action 0
 	counter = 0
 	starting_frame = 0
+	window_start_frames = []
 	for timing in timings:
 		counter += 1
 		if current_window_length != timing:
 			windows.append((current_window_length*counter, counter, starting_frame))
 			current_window_length = timing
 			starting_frame += counter
+			window_start_frames.append(starting_frame)
 			counter = 0
 	windows = windows[1:]
+	gml.write("set_attack_value(AT_DTILT, AG_NUM_WINDOWS, " + str(len(windows))+ ");\n\n")
 	for i in range(0, len(windows)):
-		gml.write("set_window_value(AT_ATTACK, " + str(i) + ", AG_WINDOW_LENGTH," + str(windows[i][0]) + ");\n")
-		gml.write("set_window_value(AT_ATTACK, " + str(i) + ", AG_WINDOW_ANIM_FRAMES," + str(windows[i][1]) + ");\n")
+		gml.write("set_window_value(AT_ATTACK, " + str(i+1) + ", AG_WINDOW_LENGTH," + str(windows[i][0]) + ");\n")
+		gml.write("set_window_value(AT_ATTACK, " + str(i+1) + ", AG_WINDOW_ANIM_FRAMES," + str(windows[i][1]) + ");\n")
 		if i != 0:
-			gml.write("set_window_value(AT_ATTACK, " + str(i) + ", AG_WINDOW_ANIM_FRAME_START," + str(windows[i][2]) + ");\n")
+			gml.write("set_window_value(AT_ATTACK, " + str(i+1) + ", AG_WINDOW_ANIM_FRAME_START," + str(windows[i][2]) + ");\n")
 		gml.write("\n")
+	window_start_frames = window_start_frames[:-1]
+	return window_start_frames
+		
+	
+"""
+"""	
+def create_gml_box_section(gml, boxes, window_start_frames):
+	gml.write("//Hitboxes\n")
+	gml.write("set_num_hitboxes(AT_ATTACK, " + str(len(boxes)) + ");\n")
+	for i in range(0, len(boxes)):
+		gml.write("set_hitbox_value(AT_ATTACK, " + str(i) + ", HG_HITBOX_TYPE, 1);\n")
+		gml.write("set_hitbox_value(AT_ATTACK, " + str(i) + ", HG_LIFETIME, 1);\n")
+		gml.write("set_hitbox_value(AT_ATTACK, " + str(i) + ", HG_SHAPE, 1);\n")
+		box = boxes[i]
+		starting_frame = box[0]
+		sx = int(box[1])
+		sy = int(box[2])
+		ex = int(box[3])
+		ey = int(box[4])
+		width = abs(sx - ex)
+		height = abs(sy - ey)
+		gml.write("set_hitbox_value(AT_ATTACK, " + str(i) + ", HG_HITBOX_X, " + str(sx) + ");\n")
+		gml.write("set_hitbox_value(AT_ATTACK, " + str(i) + ", HG_HITBOX_Y, " + str(sy) + ");\n")
+		gml.write("set_hitbox_value(AT_ATTACK, " + str(i) + ", HG_WIDTH, " + str(width) + ");\n")
+		gml.write("set_hitbox_value(AT_ATTACK, " + str(i) + ", HG_HEIGHT, " + str(height) + ");\n")
+		if starting_frame == -1:
+			#special behavior for global hitbox
+			1==1
+		else:
+			hg_window = next((j for j in range(len(window_start_frames), 0, -1) if starting_frame >= window_start_frames[j-1]))
+			hg_window_creation_frame = starting_frame - window_start_frames[hg_window-1]+1 #unsure if this is good
+			#write essential lines
+			gml.write("set_hitbox_value(AT_ATTACK, " + str(i) + ", HG_WINDOW, " + str(hg_window) + ");\n")
+			gml.write("set_hitbox_value(AT_ATTACK, " + str(i) + ", HG_WINDOW_CREATION_FRAME, " + str(hg_window_creation_frame) + ");\n")
+			
 
 
 def main():
@@ -217,7 +261,9 @@ def main():
 		build_spritesheet(outfile, action_nb, frames, outfolder)
 		gml = open(outfolder + "/" + str(action_nb) + ".gml", "w+")
 		gml.write("//Section created by mugenrivals script.\n")
-		create_gml_windows_section(gml, frames)
+		window_start_frames = create_gml_windows_section(gml, frames)
+		if action_nb in hitboxes:
+			create_gml_box_section(gml, hitboxes[action_nb], window_start_frames)
 		gml.close()
 	
 	

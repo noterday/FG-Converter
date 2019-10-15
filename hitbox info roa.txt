@@ -1,0 +1,14 @@
+Necessary values:
+HG_WINDOW = the window where the hitbox will spawn. always set to something.
+HG_WINDOW_CREATION_FRAME = the frame of the chosen window where hitbox appears. default value is 1, but it uses 0 based indexes, except 0 doesn't work
+HG_HITBOX_TYPE = 1 for attack, 2 for projectile. This should always be set to 1
+HG_LIFETIME = set to everything for global, set to 1 otherwise (default is weird, appears to fill a whole window sometimes or to fill nothing)
+HG_HITBOX_X, HG_HITBOX_Y = same as their mugen values, no parsing
+HG_WIDTH, HG_HEIGHT = need bits of math to get from mugen values
+HG_SHAPE = set to 1 always, since rectangles are fite game standard
+
+
+
+Optional values:
+HG_PARENT_HITBOX: inheritance from other box, could be used but complex
+
