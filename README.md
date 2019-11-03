@@ -1,5 +1,5 @@
 # mugen2rivals
-This script automatically converts a Mugen character into a set of spritesheets and gml scripts to use in Rivals of Aether mods. The gml scripts contain both animation timing and hitboxes (although hitboxes currently always come out misaligned).
+This script converts a Mugen character into a set of spritesheets and gml scripts to use in Rivals of Aether mods. The gml scripts contain both animation timing and hitboxes (although hitboxes currently always come out misaligned).
 
 [Example of an output script](https://pastebin.com/bpiTrt1X)   
 ![alt text](https://i.imgur.com/uqQEjjS.png)
