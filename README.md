@@ -1,5 +1,5 @@
 # mugen2rivals
-A script to converts Mugen spritesheets and hitboxes into the equivalent Rivals of Aether character files. Spritesheets are converted accurately, but hitbox positions are inacurate and need to be adjusted manually.
+A script to convert Mugen spritesheets and hitboxes into the equivalent Rivals of Aether character files. Spritesheets are converted accurately, but hitbox positions are inacurate and need to be adjusted manually.
 
 [Output Script Example](https://pastebin.com/bpiTrt1X)   
 ![alt text](https://i.imgur.com/uqQEjjS.png)
