@@ -5,17 +5,15 @@ from modules.rivals_character import RivalsCharacter
 
 
 # Determines the object to create and the conversions to apply based on command line arguments
-# For temporary testing purposes, the arguments are written out as global variables at the top of this file
 def main(input_type, output_type, mapping_file, input_folder):
-    # Create the output folders
-    output_folder = create_folders(input_folder, input_type, output_type)
-    # Parse, convert and output the character
+    output_folder = create_folders(input_folder, input_type, output_type) # Create folders
     input_character_object = create_character_object(input_folder, input_type)
-    input_character_object.parse_folder(output_folder)
-    converted_character_object = input_character_object.convert_to(output_type, output_folder, mapping_file)
-    converted_character_object.unparse_character(output_folder)
+    input_character_object.parse_folder(output_folder) # Parse the input character data
+    converted_character_object = input_character_object.convert_to(output_type, output_folder, mapping_file) # Convert to a different type
+    converted_character_object.unparse_character(output_folder) # Output the converted character to files
 
 
+# Determines the game engine used in the input folder from it's file extensions
 def guess_input_type(input_folder):
     for file in os.listdir(input_folder):
         if file.endswith(".def"):
@@ -24,6 +22,7 @@ def guess_input_type(input_folder):
             return "rivals"
 
 
+# Creates the basic folder structure for the requested output type
 def create_folders(input_folder, input_type, output_type):
     # Base Folders
     if not os.path.exists("conversion_output"):
@@ -50,12 +49,16 @@ def create_folders(input_folder, input_type, output_type):
         os.mkdir(output_folder + "/character_files/sprites")
     return output_folder
 
+
+# Returns a new character object of the specified type
 def create_character_object(input_folder, input_type):
     if input_type == "mugen":
         return MugenCharacter(input_folder)
     elif input_type == "rivals":
         return RivalsCharacter(input_folder)
 
+
+# Outputs an help message
 def print_help():
     print('USAGE: fg-converter [-h][-m] (--to-rivals | --to-mugen) <input-folder>')
     print('Converts user made characters between various fighting game engines.')
@@ -74,6 +77,8 @@ def print_help():
     exit()
 
 
+# First function called
+# Parses the arguments given from command line using getopt
 if __name__ == "__main__":
     optlist, args = getopt.getopt(sys.argv[1:], 'hm:', ['help', 'mapping-file=', 'to-rivals', 'to-mugen'])
     output_type = None

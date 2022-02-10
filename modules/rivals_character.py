@@ -11,6 +11,7 @@ class RivalsCharacter(GenericCharacter):
         'plat', 'dash', 'dashstart', 'dashstop', 'dashturn', 'land', 'landinglag', 'waveland', 'pratfall', 'crouch', 'tech', 'roll_forward', 'roll_backward', 'parry',
         'hurt', 'bighurt', 'hurtground', 'bouncehurt', 'spinhurt', 'uphurt', 'downhurt']
 
+    # Creates the object with empty values
     def __init__(self, base_folder):
         super().__init__(base_folder)
         self.config_ini = {}
@@ -62,6 +63,7 @@ class RivalsCharacter(GenericCharacter):
                     self.attacks.get(anim_name).offset = (offset_x, offset_y)
         f.close()
 
+    # Parses the content of the init.gml file
     def parse_init_gml(self):
         f = open(self.base_folder + "/scripts/init.gml", encoding="utf-8")
         lines = f.readlines()
@@ -73,6 +75,7 @@ class RivalsCharacter(GenericCharacter):
                 self.init_script[name] = value
         f.close()
 
+    # Parses the content of the scripts found in the /scripts/attacks/ folder
     def parse_attack_scripts(self):
         for attack_name in RivalsCharacter.AttackNames:
             f = open(self.base_folder + "/scripts/attacks/" + attack_name + ".gml")
@@ -104,6 +107,7 @@ class RivalsCharacter(GenericCharacter):
                             self.attacks.get(attack_name).hitboxes[hitbox_number] = {}
                         self.attacks.get(attack_name).hitboxes[hitbox_number][index] = value
 
+    # Writes a new config.ini file based on the character data
     def unparse_config_ini(self, output_folder):
         f = open(output_folder + "/character_files/config.ini", "x")
         f.write("[general]")
@@ -111,7 +115,7 @@ class RivalsCharacter(GenericCharacter):
             f.write(key + "=" + value + "\n")
         f.close()
 
-    # Writes a new load.gml file in the output folder based on the saved data
+    # Writes a new load.gml file in the output folder based on the character data
     def unparse_load_gml(self, output_folder):
         f = open(output_folder + "/character_files/scripts/load.gml", "x")
         #f.write("//This load.gml file was created by mugen2rivals.\n")
@@ -125,6 +129,7 @@ class RivalsCharacter(GenericCharacter):
             f.write(line)
         f.close()
 
+    # Writes a new init.gml file in the output folder based on the character data
     def unparse_init_gml(self, output_folder):
         f = open(output_folder + "/character_files/scripts/init.gml", "x")
         #f.write("//This init.gml file was created by mugen2rivals.\n")
@@ -133,7 +138,9 @@ class RivalsCharacter(GenericCharacter):
             f.write(line)
         f.close()
 
+    #Writes new attack .gml scripts to the output /scripts/attacks folder based on character data
     def unparse_attack_scripts(self, output_folder):
+        # All converted animations
         for anim_nb, animation in self.converted_animations.items():
             f = open(output_folder + "/converted_actions/" + str(anim_nb) + ".gml", "x")
             for key, value in animation.attack_values.items():
@@ -156,9 +163,7 @@ class RivalsCharacter(GenericCharacter):
                     f.write(line)
                 f.write("\n")
             f.close
-
-
-
+        # Only the chosen attacks from the mapping file
         for attack_name in RivalsCharacter.AttackNames:
             f = open(output_folder + "/character_files/scripts/attacks/" + attack_name + ".gml", "x")
             attack = self.attacks.get(attack_name)
@@ -183,6 +188,7 @@ class RivalsCharacter(GenericCharacter):
                 f.write("\n")
             f.close
 
+    # Copy converted spritesheets to the /sprites/ output folder
     def unparse_spritesheets(self, output_folder):
         for animation_name in RivalsCharacter.AnimationNames:
             animation = self.animations.get(animation_name)

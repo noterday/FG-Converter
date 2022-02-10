@@ -8,6 +8,7 @@ from PIL import Image
 AnimationNames = ['roll_forward', 'roll_backward']
 
 class MugenCharacter(GenericCharacter):
+    # Creates a new character with empty values
     def __init__(self, base_folder):
         self.def_file = {}
         self.sff_sprites = {}
@@ -20,6 +21,7 @@ class MugenCharacter(GenericCharacter):
         self.parse_sff_file(output_folder)
         self.parse_air_file() # TODO: Let airfile parser handle loops
 
+    # Parses the .def file to find the author information and path of other useful files
     def parse_def_file(self):
         config = configparser.ConfigParser(inline_comment_prefixes=';')
         for file in os.listdir(self.base_folder):
@@ -29,6 +31,7 @@ class MugenCharacter(GenericCharacter):
                         config.read(self.base_folder + "/" + file, encoding="latin-1")
                         self.def_file = config
 
+    # Uncompresses the .sff file with sff2png.exe, and parses the content of it's sprite-sff.def file (sprite info)
     def parse_sff_file(self, output_folder):
         subprocess.run([os.path.dirname(__file__) + "/mugen/sff2png.exe", self.base_folder + "/" + self.def_file["Files"]["sprite"],
             output_folder + "/converted_actions/extracted_sprites/sprite", "-f 0"], stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
@@ -42,6 +45,7 @@ class MugenCharacter(GenericCharacter):
             elif line.startswith("[Sprite]"):
                 sprite_section = True
 
+    # Parse the content of the .air file (animation information)
     def parse_air_file(self):
         f = open(self.base_folder + "/" + self.def_file["Files"]["anim"], encoding="latin-1")
         lines = f.readlines()
@@ -103,6 +107,7 @@ class MugenCharacter(GenericCharacter):
                 stored_clsn1 = []
                 stored_clsn2 = []
 
+    # Parse the .cmd file (unused)
     def parse_cmd_file():
         pass
 
@@ -122,6 +127,7 @@ class MugenCharacter(GenericCharacter):
         self.convert_rivals_animations_and_attacks(final_character, input_mapping, load_gml_offset)
         return final_character
 
+    # Converts the config.ini file based on information from the .def file
     def create_rivals_config_ini(self, final_character):
         def_file_info_section = dict(self.def_file["Info"].items())
         final_character.config_ini["name"] = def_file_info_section["name"]
@@ -129,6 +135,7 @@ class MugenCharacter(GenericCharacter):
         final_character.config_ini["description"] = (
             '"This character is a conversion from Mugen. Original author: ' + def_file_info_section["author"].replace('"', '') + '"')
 
+    # Reads the input mapping file if one was given
     def read_input_mapping_file(self, input_mapping_file):
         input_mapping = {}
         f = open(input_mapping_file)
@@ -142,6 +149,7 @@ class MugenCharacter(GenericCharacter):
                 input_mapping[rival_name] = mugen_number
         return input_mapping
 
+    # Converts the animations to the Rivals spritesheet format
     def create_rivals_animation_sheets(self, final_character, output_folder, input_mapping):
         offsets = {}
         if input_mapping:
@@ -203,7 +211,6 @@ class MugenCharacter(GenericCharacter):
                 position[0] = position[0] + (biggest_axis_position[0] - sprite.axisx) + element.x_offset
                 position[1] = position[1] + (biggest_axis_position[1] - sprite.axisy) + element.y_offset
                 spritesheet.paste(add_alpha(image), (int(position[0]), int(position[1])), mask=0)
-
             alpha = spritesheet.getchannel("A")
             hurtboxsheet = Image.new('RGBA', (biggest_image_dimensions[0]*len(images), biggest_image_dimensions[1]), (0,255,0,255))
             hurtboxsheet.putalpha(alpha)
@@ -216,6 +223,7 @@ class MugenCharacter(GenericCharacter):
             animation.converted_hurt_sheet = output_folder + "/" + "converted_actions/" + hurt_filename
         return offsets
 
+    # Converts the animation and attack scripts to Rivals formats
     def convert_rivals_animations_and_attacks(self, final_character, input_mapping, load_gml_offset):
         for animation_number, animation_obj in self.animations.items():
             rival_attack = RivalsAttack(animation_number)
@@ -273,11 +281,9 @@ class MugenCharacter(GenericCharacter):
                 if len(input_mapping[attack_name]) > 1:
                     final_character.attacks[attack_name].filename = self.animations[str(mugen_nb) + input_mapping[attack_name][1]].converted_sheet
                     final_character.attacks[attack_name].hurt_filename = self.animations[str(mugen_nb) + input_mapping[attack_name][1]].converted_hurt_sheet
-        return
 
-"""
-    Modify a given image to make the color of the first pixel transparent
-"""
+
+# Modifies the given image to make it transparent (assuming the first pixel of the image is the background color)
 def add_alpha(image):
     image = image.convert("RGBA")
     datas = image.getdata()
@@ -292,6 +298,8 @@ def add_alpha(image):
     image.putdata(newData)
     return image
 
+
+# Object representing a sprite as defined in the decompressed .sff file
 class MugenSprite:
     def __init__(self, group, itemno, fname, axisx, axisy):
         self.group = group
@@ -300,6 +308,8 @@ class MugenSprite:
         self.axisx = axisx # This axis is equivalent to the offset defined in rivals characters. It's meant to indicate a point at the character's feet
         self.axisy = axisy
 
+
+# Object representing an animation as defined in the .air file
 class MugenAnimation:
     def __init__(self, id):
         self.id = id
@@ -309,6 +319,8 @@ class MugenAnimation:
         self.converted_hurt_sheet = ''
         self.extra_conversion_param = ''
 
+
+# Object representing a specific frame of a mugen animation
 class MugenAnimationElement:
     def __init__(self):
         self.group_number = -1
