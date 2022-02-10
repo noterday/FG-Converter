@@ -24,16 +24,16 @@ class MugenCharacter(GenericCharacter):
         config = configparser.ConfigParser(inline_comment_prefixes=';')
         for file in os.listdir(self.base_folder):
             if file.endswith(".def"):
-                with open(self.base_folder + "/" + file) as open_file:
+                with open(self.base_folder + "/" + file, encoding="latin-1") as open_file:
                     if "[Info]" in open_file.read():
-                        config.read(self.base_folder + "/" + file)
+                        config.read(self.base_folder + "/" + file, encoding="latin-1")
                         self.def_file = config
 
     def parse_sff_file(self, output_folder):
         subprocess.run([os.path.dirname(__file__) + "/mugen/sff2png.exe", self.base_folder + "/" + self.def_file["Files"]["sprite"],
             output_folder + "/converted_actions/extracted_sprites/sprite", "-f 0"], stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
         sprite_section = False
-        f = open(output_folder + "/converted_actions/extracted_sprites/sprite-sff.def", encoding="utf-8")
+        f = open(output_folder + "/converted_actions/extracted_sprites/sprite-sff.def", encoding="latin-1")
         lines = f.readlines()
         for line in lines:
             if sprite_section:
@@ -43,7 +43,7 @@ class MugenCharacter(GenericCharacter):
                 sprite_section = True
 
     def parse_air_file(self):
-        f = open(self.base_folder + "/" + self.def_file["Files"]["anim"])
+        f = open(self.base_folder + "/" + self.def_file["Files"]["anim"], encoding="latin-1")
         lines = f.readlines()
         current_action_nb = -1
         wanted_clsn2default_nb = 0
@@ -115,7 +115,9 @@ class MugenCharacter(GenericCharacter):
         final_character.base_folder = self.base_folder
         # Do all the conversion work here
         self.create_rivals_config_ini(final_character)
-        input_mapping = self.read_input_mapping_file(input_mapping_file)
+        input_mapping = {}
+        if input_mapping_file:
+            input_mapping = self.read_input_mapping_file(input_mapping_file)
         load_gml_offset = self.create_rivals_animation_sheets(final_character, output_folder, input_mapping)
         self.convert_rivals_animations_and_attacks(final_character, input_mapping, load_gml_offset)
         return final_character
@@ -142,11 +144,13 @@ class MugenCharacter(GenericCharacter):
 
     def create_rivals_animation_sheets(self, final_character, output_folder, input_mapping):
         offsets = {}
-        for mapping in input_mapping.values():
-            if len(mapping) > 1:
-                new_animation = copy.deepcopy(self.animations[mapping[0]])
-                new_animation.extra_conversion_param = mapping[1]
-                self.animations[str(mapping[0])+mapping[1]] = new_animation
+        if input_mapping:
+            for mapping in input_mapping.values():
+                if len(mapping) > 1:
+                    if mapping[0] in self.animations:
+                        new_animation = copy.deepcopy(self.animations[mapping[0]])
+                        new_animation.extra_conversion_param = mapping[1]
+                        self.animations[str(mapping[0])+mapping[1]] = new_animation
         for id, animation in self.animations.items():
             biggest_image_dimensions = [0, 0]
             biggest_axis_position = [0, 0]
@@ -213,62 +217,63 @@ class MugenCharacter(GenericCharacter):
         return offsets
 
     def convert_rivals_animations_and_attacks(self, final_character, input_mapping, load_gml_offset):
-        for animation_name, animation in final_character.animations.items():
+        for animation_number, animation_obj in self.animations.items():
+            rival_attack = RivalsAttack(animation_number)
+            rival_attack.offset = load_gml_offset[animation_number]
+            rival_attack.filename = self.animations[animation_number].converted_sheet
+            rival_attack.hurt_filename = self.animations[animation_number].converted_hurt_sheet
+            current_window_length = 0
+            frames_in_current_window = 0
+            window_count = 0
+            hitbox_count = 0
+            for i in range(len(animation_obj.animation_elements)):
+                element = animation_obj.animation_elements[i]
+                if element.length != current_window_length:
+                    window_count += 1
+                    rival_attack.windows[str(window_count)] = {}
+                    if i:
+                        rival_attack.windows[str(window_count)]['AG_WINDOW_ANIM_FRAME_START'] = str(i)
+                    current_window_length = element.length
+                    frames_in_current_window = 0
+                frames_in_current_window += 1
+                rival_attack.windows[str(window_count)]['AG_WINDOW_TYPE'] = '1'
+                rival_attack.windows[str(window_count)]['AG_WINDOW_ANIM_FRAMES'] = str(frames_in_current_window)
+                rival_attack.windows[str(window_count)]['AG_WINDOW_LENGTH'] = str(frames_in_current_window * current_window_length)
+                # Convert the hitboxes
+                for clsn1 in element.clsn1:
+                    hitbox_count += 1
+                    start_pos = clsn1[0], clsn1[1]
+                    size = clsn1[2] - clsn1[0], clsn1[3] - clsn1[1]
+                    rival_attack.hitboxes[str(hitbox_count)] = {}
+                    rival_attack.hitboxes[str(hitbox_count)]['HG_HITBOX_TYPE'] = '1'
+                    rival_attack.hitboxes[str(hitbox_count)]['HG_WINDOW'] = str(window_count)
+                    rival_attack.hitboxes[str(hitbox_count)]['HG_LIFETIME'] = '2'
+                    rival_attack.hitboxes[str(hitbox_count)]['HG_HITBOX_X'] = str(round(start_pos[0] + size[0]/2))
+                    rival_attack.hitboxes[str(hitbox_count)]['HG_HITBOX_Y'] = str(round(start_pos[1] + size[1]/2))
+                    rival_attack.hitboxes[str(hitbox_count)]['HG_WIDTH'] = str(size[0])
+                    rival_attack.hitboxes[str(hitbox_count)]['HG_HEIGHT'] = str(size[1])
+                    rival_attack.hitboxes[str(hitbox_count)]['HG_PRIORITY'] = '1'
+                    rival_attack.hitboxes[str(hitbox_count)]['HG_DAMAGE'] = '1'
+                    rival_attack.hitboxes[str(hitbox_count)]['HG_ANGLE'] = '1'
+                    rival_attack.hitboxes[str(hitbox_count)]['HG_BASE_KNOCKBACK'] = '1'
+                    rival_attack.hitboxes[str(hitbox_count)]['HG_BASE_HITPAUSE'] = '1'
+            rival_attack.num_hitboxes = str(hitbox_count)
+            rival_attack.attack_values['AG_NUM_WINDOWS'] = str(len(rival_attack.windows))
+            final_character.converted_animations[animation_number] = rival_attack
+        for animation_name in final_character.animations.keys():
             if animation_name in input_mapping.keys():
                 mugen_nb = int(input_mapping[animation_name][0])
-                animation.offset = load_gml_offset[mugen_nb]
-                animation.filename = self.animations[mugen_nb].converted_sheet
-                animation.hurt_filename = self.animations[mugen_nb].converted_hurt_sheet
-        for attack_name, attack in final_character.attacks.items():
+                final_character.animations[animation_name] = final_character.converted_animations[mugen_nb]
+                final_character.animations[animation_name].name = animation_name
+        for attack_name in final_character.attacks.keys():
             if attack_name in input_mapping.keys():
                 mugen_nb = int(input_mapping[attack_name][0])
-                attack.offset = load_gml_offset[mugen_nb]
+                final_character.attacks[attack_name] = final_character.converted_animations[mugen_nb]
+                final_character.attacks[attack_name].name = attack_name
                 if len(input_mapping[attack_name]) > 1:
-                    attack.filename = self.animations[str(mugen_nb) + input_mapping[attack_name][1]].converted_sheet
-                    attack.hurt_filename = self.animations[str(mugen_nb) + input_mapping[attack_name][1]].converted_hurt_sheet
-                else:
-                    attack.filename = self.animations[mugen_nb].converted_sheet
-                    attack.hurt_filename = self.animations[mugen_nb].converted_hurt_sheet
-                # Convert the animation timings
-                current_window_length = 0
-                frames_in_current_window = 0
-                window_count = 0
-                hitbox_count = 0
-                for i in range(len(self.animations[mugen_nb].animation_elements)):
-                    element = self.animations[mugen_nb].animation_elements[i]
-                    if element.length != current_window_length:
-                        window_count += 1
-                        attack.windows[str(window_count)] = {}
-                        if i:
-                            attack.windows[str(window_count)]['AG_WINDOW_ANIM_FRAME_START'] = str(i)
-                        current_window_length = element.length
-                        frames_in_current_window = 0
-                    frames_in_current_window += 1
-                    attack.windows[str(window_count)]['AG_WINDOW_TYPE'] = '1'
-                    attack.windows[str(window_count)]['AG_WINDOW_ANIM_FRAMES'] = str(frames_in_current_window)
-                    attack.windows[str(window_count)]['AG_WINDOW_LENGTH'] = str(frames_in_current_window * current_window_length)
-                    # Convert the hitboxes
-                    for clsn1 in element.clsn1:
-                        hitbox_count += 1
-                        start_pos = clsn1[0], clsn1[1]
-                        size = clsn1[2] - clsn1[0], clsn1[3] - clsn1[1]
-                        attack.hitboxes[str(hitbox_count)] = {}
-                        attack.hitboxes[str(hitbox_count)]['HG_HITBOX_TYPE'] = '1'
-                        attack.hitboxes[str(hitbox_count)]['HG_WINDOW'] = str(window_count)
-                        attack.hitboxes[str(hitbox_count)]['HG_LIFETIME'] = '2'
-                        attack.hitboxes[str(hitbox_count)]['HG_HITBOX_X'] = str(round(start_pos[0] + size[0]/2))
-                        attack.hitboxes[str(hitbox_count)]['HG_HITBOX_Y'] = str(round(start_pos[1] + size[1]/2))
-                        attack.hitboxes[str(hitbox_count)]['HG_WIDTH'] = str(size[0])
-                        attack.hitboxes[str(hitbox_count)]['HG_HEIGHT'] = str(size[1])
-                        attack.hitboxes[str(hitbox_count)]['HG_PRIORITY'] = '1'
-                        attack.hitboxes[str(hitbox_count)]['HG_DAMAGE'] = '1'
-                        attack.hitboxes[str(hitbox_count)]['HG_ANGLE'] = '1'
-                        attack.hitboxes[str(hitbox_count)]['HG_BASE_KNOCKBACK'] = '1'
-                        attack.hitboxes[str(hitbox_count)]['HG_BASE_HITPAUSE'] = '1'
-                attack.num_hitboxes = str(hitbox_count)
-                attack.attack_values['AG_NUM_WINDOWS'] = str(len(attack.windows))
-                #attack.num_hitboxes = '0'
-                #attack.hitboxes = {}
+                    final_character.attacks[attack_name].filename = self.animations[str(mugen_nb) + input_mapping[attack_name][1]].converted_sheet
+                    final_character.attacks[attack_name].hurt_filename = self.animations[str(mugen_nb) + input_mapping[attack_name][1]].converted_hurt_sheet
+        return
 
 """
     Modify a given image to make the color of the first pixel transparent

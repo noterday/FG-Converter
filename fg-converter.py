@@ -4,13 +4,6 @@ from modules.mugen_character import MugenCharacter
 from modules.rivals_character import RivalsCharacter
 
 
-# Fake argument sets to use as tests for this script
-M_TO_R = ["/storage/GameDev/rivals-redo/useful files/mugen characters/kfm2", "mugen", "rivals", "/storage/GameDev/rivals-redo/script/m2r_button_mapping_example.ini"]
-R_TO_M = ["/storage/GameDev/rivals-redo/useful files/roa characters/Sandbert", "rivals", "mugen", ""]
-R_TO_R = ["/storage/GameDev/rivals-redo/useful files/roa characters/Sandbert", "rivals", "rivals", ""]
-
-short_options = ['']
-
 # Determines the object to create and the conversions to apply based on command line arguments
 # For temporary testing purposes, the arguments are written out as global variables at the top of this file
 def main(input_type, output_type, mapping_file, input_folder):
@@ -64,7 +57,7 @@ def create_character_object(input_folder, input_type):
         return RivalsCharacter(input_folder)
 
 def print_help():
-    print('USAGE: fg-converter [-h][-m] (--output-rivals | --output-mugen) <input-folder>')
+    print('USAGE: fg-converter [-h][-m] (--to-rivals | --to-mugen) <input-folder>')
     print('Converts user made characters between various fighting game engines.')
     print('')
     print('-h, --help')
@@ -73,7 +66,7 @@ def print_help():
     print('-m, --mapping-file=FILE')
     print('     Use this file to automatically map animations to specific inputs')
     print('')
-    print('(--output-rivals | --output-mugen)')
+    print('(--to-rivals | --to-mugen)')
     print('     Convert the character to the specified game engine')
     print('')
     print('input-folder')
@@ -82,7 +75,7 @@ def print_help():
 
 
 if __name__ == "__main__":
-    optlist, args = getopt.getopt(sys.argv[1:], 'hm:', ['help', 'mapping-file=', 'output-rivals', 'output-mugen'])
+    optlist, args = getopt.getopt(sys.argv[1:], 'hm:', ['help', 'mapping-file=', 'to-rivals', 'to-mugen'])
     output_type = None
     mapping_file = None
     for option, value in optlist:
@@ -90,9 +83,9 @@ if __name__ == "__main__":
             print_help()
         elif option in ['-m', '--mapping-file']:
             mapping_file = value
-        elif option == '--output-rivals':
+        elif option == '--to-rivals':
             output_type = 'rivals'
-        elif option == '--output-mugen':
+        elif option == '--to-mugen':
             output_type = 'mugen'
     if len(args) != 1 or not output_type:
         print_help()

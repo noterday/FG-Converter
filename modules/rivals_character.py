@@ -15,6 +15,7 @@ class RivalsCharacter(GenericCharacter):
         super().__init__(base_folder)
         self.config_ini = {}
         self.init_script = {}
+        self.converted_animations = {}
         self.animations = {anim_name : RivalsAnimation(anim_name) for anim_name in RivalsCharacter.AnimationNames}
         self.attacks = {move_name : RivalsAttack(move_name) for move_name in RivalsCharacter.AttackNames}
 
@@ -133,9 +134,33 @@ class RivalsCharacter(GenericCharacter):
         f.close()
 
     def unparse_attack_scripts(self, output_folder):
+        for anim_nb, animation in self.converted_animations.items():
+            f = open(output_folder + "/converted_actions/" + str(anim_nb) + ".gml", "x")
+            for key, value in animation.attack_values.items():
+                line = ("set_attack_value(AT_" + str(anim_nb).upper() +
+                    ", " + key + ", " + value + ");\n")
+                f.write(line)
+            f.write("\n")
+            for nb, window in animation.windows.items():
+                for key, value in window.items():
+                    line = ("set_window_value(AT_" + str(anim_nb).upper() +
+                            ", " + nb + ", " + key + ", " + value + ");\n")
+                    f.write(line)
+                f.write("\n")
+            line = "set_num_hitboxes(AT_" + str(anim_nb).upper() + ", " + animation.num_hitboxes + ");\n"
+            f.write(line)
+            for nb, hitbox in animation.hitboxes.items():
+                for key, value in hitbox.items():
+                    line = ("set_hitbox_value(AT_" + str(anim_nb).upper() + ", " + nb + ", " +
+                        key + ", " + value + ");\n")
+                    f.write(line)
+                f.write("\n")
+            f.close
+
+
+
         for attack_name in RivalsCharacter.AttackNames:
             f = open(output_folder + "/character_files/scripts/attacks/" + attack_name + ".gml", "x")
-            #f.write("//This attack file was created by mugen2rivals.\n")
             attack = self.attacks.get(attack_name)
             for key, value in attack.attack_values.items():
                 line = ("set_attack_value(AT_" + attack_name.upper() +
@@ -169,6 +194,7 @@ class RivalsCharacter(GenericCharacter):
             if attack.filename:
                 shutil.copy2(attack.filename, output_folder + "/character_files/sprites/" + attack_name + "_" + attack.filename.split("/")[-1].split("_")[-1])
                 shutil.copy2(attack.hurt_filename, output_folder + "/character_files/sprites/" + attack_name + "_hurt_" + attack.hurt_filename.split("/")[-1].split("_")[-1])
+
 
 class RivalsAnimation:
     def __init__(self, name):
