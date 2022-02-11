@@ -59,13 +59,13 @@ def create_character_object(input_folder, input_type):
 
 # Outputs an help message
 def print_help():
-    print('USAGE: fg-converter [-h][-m] (--to-rivals | --to-mugen) <input-folder>')
+    print('USAGE: fg-converter [-h][-m <file>] (--to-rivals | --to-mugen) <input-folder>')
     print('Converts user made characters between various fighting game engines.')
     print('')
     print('-h, --help')
     print('     Print this help')
     print('')
-    print('-m, --mapping-file=FILE')
+    print('-m <file>, --mapping-file=<file>')
     print('     Use this file to automatically map animations to specific inputs')
     print('')
     print('(--to-rivals | --to-mugen)')

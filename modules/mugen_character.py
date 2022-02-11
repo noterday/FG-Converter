@@ -313,9 +313,10 @@ class MugenCharacter(GenericCharacter):
                     print('Action ' + str(mugen_nb) + ' does not exist in the input Mugen character.')
         # Get height at idle
         if final_character.animations['idle']:
-            idle_sprite = Image.open(final_character.animations['idle'].filename)
-            height = idle_sprite.size[1]
-            final_character.init_script['char_height'] = str(height)
+            if final_character.animations['idle'].filename:
+                idle_sprite = Image.open(final_character.animations['idle'].filename)
+                height = idle_sprite.size[1]
+                final_character.init_script['char_height'] = str(height)
 
 
 
