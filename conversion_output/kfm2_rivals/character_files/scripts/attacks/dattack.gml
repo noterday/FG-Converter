@@ -1,3 +1,5 @@
+set_attack_value(AT_DATTACK, AG_SPRITE, sprite_get("dattack"));
+set_attack_value(AT_DATTACK, AG_HURTBOX_SPRITE, sprite_get("dattack_hurt"));
 set_attack_value(AT_DATTACK, AG_NUM_WINDOWS, 4);
 
 set_window_value(AT_DATTACK, 1, AG_WINDOW_TYPE, 1);

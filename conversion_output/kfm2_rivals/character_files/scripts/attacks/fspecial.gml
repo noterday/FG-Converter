@@ -1,3 +1,5 @@
+set_attack_value(AT_FSPECIAL, AG_SPRITE, sprite_get("fspecial"));
+set_attack_value(AT_FSPECIAL, AG_HURTBOX_SPRITE, sprite_get("fspecial_hurt"));
 set_attack_value(AT_FSPECIAL, AG_NUM_WINDOWS, 9);
 
 set_window_value(AT_FSPECIAL, 1, AG_WINDOW_TYPE, 1);

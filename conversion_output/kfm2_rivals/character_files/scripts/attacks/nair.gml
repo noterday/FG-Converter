@@ -1,3 +1,5 @@
+set_attack_value(AT_NAIR, AG_SPRITE, sprite_get("nair"));
+set_attack_value(AT_NAIR, AG_HURTBOX_SPRITE, sprite_get("nair_hurt"));
 set_attack_value(AT_NAIR, AG_NUM_WINDOWS, 3);
 
 set_window_value(AT_NAIR, 1, AG_WINDOW_TYPE, 1);

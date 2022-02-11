@@ -118,8 +118,8 @@ class RivalsCharacter(GenericCharacter):
     # Writes a new load.gml file in the output folder based on the character data
     def unparse_load_gml(self, output_folder):
         f = open(output_folder + "/character_files/scripts/load.gml", "x")
-        #f.write("//This load.gml file was created by mugen2rivals.\n")
         for animation in self.animations.values():
+        #    if animation.name == 'idle'
             if animation.offset[0] or animation.offset[1]:
                 line = 'sprite_change_offset("' + animation.name + '"' + ", " + str(animation.offset[0]) + ", " + str(animation.offset[1]) + ");\n"
                 f.write(line)
@@ -132,7 +132,6 @@ class RivalsCharacter(GenericCharacter):
     # Writes a new init.gml file in the output folder based on the character data
     def unparse_init_gml(self, output_folder):
         f = open(output_folder + "/character_files/scripts/init.gml", "x")
-        #f.write("//This init.gml file was created by mugen2rivals.\n")
         for name, value in self.init_script.items():
             line = name + ' = ' + value + ';\n'
             f.write(line)

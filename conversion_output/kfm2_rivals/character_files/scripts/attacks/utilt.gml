@@ -1,3 +1,5 @@
+set_attack_value(AT_UTILT, AG_SPRITE, sprite_get("utilt"));
+set_attack_value(AT_UTILT, AG_HURTBOX_SPRITE, sprite_get("utilt_hurt"));
 set_attack_value(AT_UTILT, AG_NUM_WINDOWS, 5);
 
 set_window_value(AT_UTILT, 1, AG_WINDOW_TYPE, 1);

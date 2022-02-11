@@ -1,3 +1,5 @@
+set_attack_value(AT_BAIR, AG_SPRITE, sprite_get("bair"));
+set_attack_value(AT_BAIR, AG_HURTBOX_SPRITE, sprite_get("bair_hurt"));
 set_attack_value(AT_BAIR, AG_NUM_WINDOWS, 4);
 
 set_window_value(AT_BAIR, 1, AG_WINDOW_TYPE, 1);

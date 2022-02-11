@@ -25,15 +25,24 @@ class MugenCharacter(GenericCharacter):
     def parse_def_file(self):
         config = configparser.ConfigParser(inline_comment_prefixes=';')
         for file in os.listdir(self.base_folder):
-            if file.endswith(".def"):
-                with open(self.base_folder + "/" + file, encoding="latin-1") as open_file:
-                    if "[Info]" in open_file.read():
-                        config.read(self.base_folder + "/" + file, encoding="latin-1")
-                        self.def_file = config
+            if not file.startswith("intro") and not file.startswith("ending"):
+                if file.endswith(".def"):
+                    with open(self.base_folder + "/" + file, encoding="latin-1") as open_file:
+                        if "[Info]" in open_file.read():
+                            config.read(self.base_folder + "/" + file, encoding="latin-1")
+                            self.def_file = config
+        for file in os.listdir(self.base_folder):
+            if not file.startswith("intro") and not file.startswith("ending"):
+                if file.endswith(".sff"):
+                    self.def_file["Files"]["sprite"] = file
+                elif file.endswith(".air"):
+                    self.def_file["Files"]["anim"] = file
 
     # Uncompresses the .sff file with sff2png.exe, and parses the content of it's sprite-sff.def file (sprite info)
     def parse_sff_file(self, output_folder):
-        subprocess.run([os.path.dirname(__file__) + "/mugen/sff2png.exe", self.base_folder + "/" + self.def_file["Files"]["sprite"],
+        if not self.base_folder.endswith("/"):
+            self.base_folder += "/"
+        subprocess.run([os.path.dirname(__file__) + "/mugen/sff2png.exe", self.base_folder + self.def_file["Files"]["sprite"],
             output_folder + "/converted_actions/extracted_sprites/sprite", "-f 0"], stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
         sprite_section = False
         f = open(output_folder + "/converted_actions/extracted_sprites/sprite-sff.def", encoding="latin-1")
@@ -96,8 +105,12 @@ class MugenCharacter(GenericCharacter):
                 self.animations[current_action_nb].animation_elements[-1].clsn2 = stored_clsn2
                 #    self.optional_parameters = ""
                 values = line.split(',')
-                self.animations[current_action_nb].animation_elements[-1].group_number = values[0]
-                self.animations[current_action_nb].animation_elements[-1].image_number = values[1]
+                if (values[0], values[1]) in self.sff_sprites:
+                    self.animations[current_action_nb].animation_elements[-1].group_number = values[0]
+                    self.animations[current_action_nb].animation_elements[-1].image_number = values[1]
+                else:
+                    self.animations[current_action_nb].animation_elements[-1].group_number = '0'
+                    self.animations[current_action_nb].animation_elements[-1].image_number = '0'
                 self.animations[current_action_nb].animation_elements[-1].x_offset = int(values[2])
                 self.animations[current_action_nb].animation_elements[-1].y_offset = int(values[3])
                 self.animations[current_action_nb].animation_elements[-1].length = int(values[4])
@@ -109,6 +122,10 @@ class MugenCharacter(GenericCharacter):
 
     # Parse the .cmd file (unused)
     def parse_cmd_file():
+        pass
+
+    # Parses the .cns file
+    def parse_cns_file():
         pass
 
     # Creates a RivalsCharacter object using this object's data
@@ -216,8 +233,11 @@ class MugenCharacter(GenericCharacter):
             hurtboxsheet.putalpha(alpha)
             filename = str(id) + "_strip" + str(len(images)) + '.png'
             hurt_filename = str(id)+ "_hurt_strip" + str(len(images)) + '.png'
-            spritesheet.save(output_folder + "/converted_actions/" + filename)
-            hurtboxsheet.save(output_folder + "/converted_actions/" + hurt_filename)
+            try:
+                spritesheet.save(output_folder + "/converted_actions/" + filename)
+                hurtboxsheet.save(output_folder + "/converted_actions/" + hurt_filename)
+            except Exception:
+                pass
             offsets[id] = biggest_axis_position
             animation.converted_sheet = output_folder + "/" + "converted_actions/" + filename
             animation.converted_hurt_sheet = output_folder + "/" + "converted_actions/" + hurt_filename
@@ -226,7 +246,7 @@ class MugenCharacter(GenericCharacter):
     # Converts the animation and attack scripts to Rivals formats
     def convert_rivals_animations_and_attacks(self, final_character, input_mapping, load_gml_offset):
         for animation_number, animation_obj in self.animations.items():
-            rival_attack = RivalsAttack(animation_number)
+            rival_attack = RivalsAttack(str(animation_number))
             rival_attack.offset = load_gml_offset[animation_number]
             rival_attack.filename = self.animations[animation_number].converted_sheet
             rival_attack.hurt_filename = self.animations[animation_number].converted_hurt_sheet
@@ -244,6 +264,8 @@ class MugenCharacter(GenericCharacter):
                     current_window_length = element.length
                     frames_in_current_window = 0
                 frames_in_current_window += 1
+                rival_attack.attack_values['AG_SPRITE'] = 'sprite_get("' + rival_attack.name + '")'
+                rival_attack.attack_values['AG_HURTBOX_SPRITE'] = 'sprite_get("' + rival_attack.name + '_hurt")'
                 rival_attack.windows[str(window_count)]['AG_WINDOW_TYPE'] = '1'
                 rival_attack.windows[str(window_count)]['AG_WINDOW_ANIM_FRAMES'] = str(frames_in_current_window)
                 rival_attack.windows[str(window_count)]['AG_WINDOW_LENGTH'] = str(frames_in_current_window * current_window_length)
@@ -271,16 +293,30 @@ class MugenCharacter(GenericCharacter):
         for animation_name in final_character.animations.keys():
             if animation_name in input_mapping.keys():
                 mugen_nb = int(input_mapping[animation_name][0])
-                final_character.animations[animation_name] = final_character.converted_animations[mugen_nb]
-                final_character.animations[animation_name].name = animation_name
+                if mugen_nb in final_character.converted_animations:
+                    final_character.animations[animation_name] = copy.deepcopy(final_character.converted_animations[mugen_nb])
+                    final_character.animations[animation_name].name = animation_name
+                else:
+                    print('Action ' + str(mugen_nb) + ' does not exist in the input Mugen character.')
         for attack_name in final_character.attacks.keys():
             if attack_name in input_mapping.keys():
                 mugen_nb = int(input_mapping[attack_name][0])
-                final_character.attacks[attack_name] = final_character.converted_animations[mugen_nb]
-                final_character.attacks[attack_name].name = attack_name
-                if len(input_mapping[attack_name]) > 1:
-                    final_character.attacks[attack_name].filename = self.animations[str(mugen_nb) + input_mapping[attack_name][1]].converted_sheet
-                    final_character.attacks[attack_name].hurt_filename = self.animations[str(mugen_nb) + input_mapping[attack_name][1]].converted_hurt_sheet
+                if mugen_nb in final_character.converted_animations:
+                    final_character.attacks[attack_name] = copy.deepcopy(final_character.converted_animations[mugen_nb])
+                    final_character.attacks[attack_name].name = attack_name
+                    final_character.attacks[attack_name].attack_values['AG_SPRITE'] = 'sprite_get("' + attack_name + '")'
+                    final_character.attacks[attack_name].attack_values['AG_HURTBOX_SPRITE'] = 'sprite_get("' + attack_name + '_hurt")'
+                    if len(input_mapping[attack_name]) > 1:
+                        final_character.attacks[attack_name].filename = self.animations[str(mugen_nb) + input_mapping[attack_name][1]].converted_sheet
+                        final_character.attacks[attack_name].hurt_filename = self.animations[str(mugen_nb) + input_mapping[attack_name][1]].converted_hurt_sheet
+                else:
+                    print('Action ' + str(mugen_nb) + ' does not exist in the input Mugen character.')
+        # Get height at idle
+        if final_character.animations['idle']:
+            idle_sprite = Image.open(final_character.animations['idle'].filename)
+            height = idle_sprite.size[1]
+            final_character.init_script['char_height'] = str(height)
+
 
 
 # Modifies the given image to make it transparent (assuming the first pixel of the image is the background color)

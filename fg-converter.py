@@ -27,7 +27,6 @@ def create_folders(input_folder, input_type, output_type):
     # Base Folders
     if not os.path.exists("conversion_output"):
         os.mkdir("conversion_output")
-    print(input_folder, os.path.basename(input_folder.rstrip('/')))
     output_folder = "conversion_output/" + os.path.basename(input_folder.rstrip('/')) + "_" + output_type
     if not os.path.exists(output_folder):
         os.mkdir(output_folder)

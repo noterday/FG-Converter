@@ -4,7 +4,9 @@ filename = conversion_output/kfm2_rivals/converted_actions/extracted_sprites/spr
 [Option]
 input.dir =
 sprite.compress.5 = lz5 ;none/lz5/rle5
-sprite.compress.8 = rle8 ;none/rle8
+sprite.compress.8 = png8 ;none/rle8/png8
+sprite.compress.24 = png24 ;none/png24
+sprite.compress.32 = png32 ;none/png32
 sprite.decompressonload = 0 ;0/1
 sprite.detectduplicates = 0 ;0/1
 sprite.autocrop = 1 ;0/1
