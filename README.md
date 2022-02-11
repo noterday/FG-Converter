@@ -26,6 +26,8 @@ python3 fg-converter.py [-h][-m <file>] (--to-rivals | --to-mugen) <input-folder
 
 Reference the 'button_mapping.ini' file for an example of button mapping for a Rivals > Mugen conversion.
 
+Input references: 
+[Mugen Action Numbers](http://www.elecbyte.com/mugendocs-11b1/air.html#character-reserved-action-numbers), [Rivals of Aether Animation Names](https://rivalsofaether.com/animation-names/).
 
 ## TODO
 - [ ] Conversion of sound effects
