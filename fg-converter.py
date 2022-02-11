@@ -95,6 +95,8 @@ if __name__ == "__main__":
         print_help()
     else:
         input_folder = args[0]
+    mapping_file = mapping_file.replace('"', '')
+    input_folder = input_folder.replace('"', '')
     input_type = guess_input_type(input_folder)
     if input_type == output_type:
         print("Input and Output types cannot be the same.")
