@@ -22,6 +22,10 @@ python3 fg-converter.py [-h][-m <file>] (--to-rivals | --to-mugen) <input-folder
 
 (--to-rivals | --to-mugen)
      Convert the character to the specified game engine
+
+<input-folder>
+    The folder containing the character files to convert.
+    For Mugen characters, this is the folder that contains the .def file.
 ```
 
 Reference the 'button_mapping.ini' file for an example of button mapping for a Rivals > Mugen conversion.
@@ -30,7 +34,7 @@ Input references:
 [Mugen Action Numbers](http://www.elecbyte.com/mugendocs-11b1/air.html#character-reserved-action-numbers), [Rivals of Aether Animation Names](https://rivalsofaether.com/animation-names/).
 
 ## TODO
+- [ ] Better handling of Mugen .sff file + handling of Mugen color palettes
 - [ ] Conversion of sound effects
-- [ ] Conversion of color palettes
 - [ ] Add reverse conversion (from Rivals to Mugen)
-- [ ] Add support for Fraymakers when it releases (and any other relevant game)
+- [ ] Support for other games (Fraymaker on release or anything else that is requested)
