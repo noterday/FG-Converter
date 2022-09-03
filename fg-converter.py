@@ -4,30 +4,101 @@ from modules.mugen_character import MugenCharacter
 from modules.rivals_character import RivalsCharacter
 
 
-# Determines the object to create and the conversions to apply based on command line arguments
-def main(input_type, output_type, mapping_file, input_folder):
-    output_folder = create_folders(input_folder, input_type, output_type) # Create folders
-    input_character_object = create_character_object(input_folder, input_type)
-    input_character_object.parse_folder(output_folder) # Parse the input character data
-    converted_character_object = input_character_object.convert_to(output_type, output_folder, mapping_file) # Convert to a different type
-    converted_character_object.unparse_character(output_folder) # Output the converted character to files
+# Outputs an help message
+def print_help():
+    print('USAGE: fg-converter [-h][-m <file>][-o <value>] <input>')
+    print("")
+    print("-h, --help")
+    print("     Print this help")
+    print("")
+    print("-m <file>, --mapping-file=<file>")
+    print("     Use this file to map animations from the input character to animations in the output character")
+    print("     If this argument is given, a ready-to-use character directory containing the necessary animations will be generated.")
+    print("     If this argument is not given, a raw dump of all converted animations will be generated instead.")
+    print("")
+    print("-o <value>, --output=<value>")
+    print("     The game engine the character will be converted into.")
+    print("     Value should be one of the following numbers: ")
+    print("         1. Rivals of Aether")
+    print("         2. Mugen (work-in-progress)")
+    print("")
+    print("<input>")
+    print("     The path to the root directory of the character to convert.")
+    print("     For Mugen characters, the directory must contain a .def file")
+    print("     For Rivals characters, the directory must contain a config.ini file")
+
+
+def prompt_for_output_type():
+    print("Choose an game output type:")
+    print("1. Rivals of Aether")
+    print("2. Mugen (work-in-progress)")
+    print("")
+    return input("Enter: ")
 
 
 # Determines the game engine used in the input folder from it's file extensions
 def guess_input_type(input_folder):
     for file in os.listdir(input_folder):
-        if file.endswith(".def"):
-            return "mugen"
         if file.endswith("config.ini"):
             return "rivals"
+        if file.endswith(".def"):
+            return "mugen"
 
 
-# Creates the basic folder structure for the requested output type
-def create_folders(input_folder, input_type, output_type):
-    # Base Folders
-    if not os.path.exists("conversion_output"):
-        os.mkdir("conversion_output")
-    output_folder = "conversion_output/" + os.path.basename(input_folder.rstrip('/')) + "_" + output_type
+# Returns a new character object of the specified type
+def create_character_object(input_folder):
+    input_type = guess_input_type(input_folder)
+    if input_type == "rivals":
+        return RivalsCharacter(input_folder)
+    elif input_type == "mugen":
+        return MugenCharacter(input_folder)
+    else:
+        raise Exception("Error: No valid object for this type")
+
+
+if __name__ == "__main__":
+    optlist, args = getopt.getopt(sys.argv[1:], 'hm:o:', ['help', 'mapping', 'output'])
+    button_mapping_file = None
+    chosen_output = None
+
+    # Parsing the options
+    for option, value in optlist:
+        if option in ['-h', '--help']:
+            print_help()
+            exit()
+        elif option in ['-m', '--mapping']:
+            button_mapping_file = value
+        elif option in ['-o', '--output']:
+            chosen_output = value
+
+    # Parse the command line argument
+    if len(args) != 1:
+        print_help()
+        exit()
+    else:
+        input_folder = args[0]
+
+    # Determine the folder structure
+    if button_mapping_file:
+        print("Converting according to the given button mapping.")
+        print("")
+    elif button_mapping_file == None:
+        print("No button mapping given. Will output a raw animation folder.")
+        print("")
+
+    # Determine the output type
+    if not chosen_output:
+        chosen_output = prompt_for_output_type()
+    chosen_output = chosen_output.replace(" ", "")
+    if chosen_output not in ["1", "2"]:
+        print("Invalid output type!")
+
+
+    # Basic folder structure
+    NAMES = ["rivals", "mugen"]
+    if not os.path.exists("converted_characters"):
+        os.mkdir("converted_characters")
+    output_folder = "converted_characters/" + os.path.basename(input_folder.rstrip('/')) + "_" + NAMES[int(chosen_output)-1] + "_converted"
     if not os.path.exists(output_folder):
         os.mkdir(output_folder)
     else:
@@ -36,69 +107,17 @@ def create_folders(input_folder, input_type, output_type):
             new_filename_counter += 1
         output_folder += str(new_filename_counter)
         os.mkdir(output_folder)
-    # Game Specific Input folders
-    if input_type == "mugen":
-        os.mkdir(output_folder + "/converted_actions")
-        os.mkdir(output_folder + "/converted_actions/extracted_sprites")
-    # Game Specific Output folders
-    if output_type == "rivals":
-        os.mkdir(output_folder + "/character_files")
-        os.mkdir(output_folder + "/character_files/scripts")
-        os.mkdir(output_folder + "/character_files/scripts/attacks")
-        os.mkdir(output_folder + "/character_files/sprites")
-    return output_folder
 
-
-# Returns a new character object of the specified type
-def create_character_object(input_folder, input_type):
-    if input_type == "mugen":
-        return MugenCharacter(input_folder)
-    elif input_type == "rivals":
-        return RivalsCharacter(input_folder)
-
-
-# Outputs an help message
-def print_help():
-    print('USAGE: fg-converter [-h][-m <file>] (--to-rivals | --to-mugen) <input-folder>')
-    print('Converts user made characters between various fighting game engines.')
-    print('')
-    print('-h, --help')
-    print('     Print this help')
-    print('')
-    print('-m <file>, --mapping-file=<file>')
-    print('     Use this file to automatically map animations to specific inputs')
-    print('')
-    print('(--to-rivals | --to-mugen)')
-    print('     Convert the character to the specified game engine')
-    print('')
-    print('input-folder')
-    print('     The character folder to convert from')
-    exit()
-
-
-# First function called
-# Parses the arguments given from command line using getopt
-if __name__ == "__main__":
-    optlist, args = getopt.getopt(sys.argv[1:], 'hm:', ['help', 'mapping-file=', 'to-rivals', 'to-mugen'])
-    output_type = None
-    mapping_file = None
-    for option, value in optlist:
-        if option in ['-h', '--help']:
-            print_help()
-        elif option in ['-m', '--mapping-file']:
-            mapping_file = value
-        elif option == '--to-rivals':
-            output_type = 'rivals'
-        elif option == '--to-mugen':
-            output_type = 'mugen'
-    if len(args) != 1 or not output_type:
-        print_help()
+    # Conversion
+    base_character = create_character_object(input_folder)
+    base_character.parse()
+    if button_mapping_file:
+        if chosen_output == "1":
+            base_character.convert_to_rivals_mapped(output_folder, button_mapping_file)
+        elif chosen_output == "2":
+            base_character.convert_to_mugen_mapped(output_folder, button_mapping_file)
     else:
-        input_folder = args[0]
-    mapping_file = mapping_file.replace('"', '')
-    input_folder = input_folder.replace('"', '')
-    input_type = guess_input_type(input_folder)
-    if input_type == output_type:
-        print("Input and Output types cannot be the same.")
-        exit()
-    main(input_type, output_type, mapping_file, input_folder)
+        if chosen_output == "1":
+            base_character.convert_to_rivals_raw(output_folder)
+        elif chosen_output == "2":
+            base_character.convert_to_mugen_raw(output_folder)
