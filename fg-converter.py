@@ -96,9 +96,9 @@ if __name__ == "__main__":
 
     # Basic folder structure
     NAMES = ["rivals", "mugen"]
-    if not os.path.exists("converted_characters"):
-        os.mkdir("converted_characters")
-    output_folder = "converted_characters/" + os.path.basename(input_folder.rstrip('/')) + "_" + NAMES[int(chosen_output)-1] + "_converted"
+    if not os.path.exists("output"):
+        os.mkdir("output")
+    output_folder = "output/" + os.path.basename(input_folder.rstrip('/')) + "_" + NAMES[int(chosen_output)-1] + "_out"
     if not os.path.exists(output_folder):
         os.mkdir(output_folder)
     else:
