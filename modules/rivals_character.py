@@ -30,7 +30,6 @@ class RivalsCharacter():
         self.unparse_load_gml(output_folder)
         self.unparse_init_gml(output_folder)
         self.unparse_attack_scripts(output_folder)
-        self.unparse_spritesheets(output_folder)
 
     # Returns itself if the conversion type is Rivals
     def convert_to_rivals(self, output_folder):
@@ -149,9 +148,6 @@ class RivalsCharacter():
 
     #Writes new attack .gml scripts to the output /scripts/attacks folder based on character data
     def unparse_attack_scripts(self, output_folder):
-        # TODO: UPDATE THIS
-        # The attack/animation dictonaries should be 1 large dict. It should include both the mapped and raw items.
-        # All the information on where to output them, and under what name, should be contained in the object
         for anim_nb, animation in self.animations.items():
             if animation.filepath and animation.attack_values:
                 f = open(output_folder + animation.filepath + animation.name + ".gml", "x")
@@ -175,16 +171,6 @@ class RivalsCharacter():
                         f.write(line)
                     f.write("\n")
                 f.close
-
-    # Copy converted spritesheets to the /sprites/ output folder
-    def unparse_spritesheets(self, output_folder):
-        for anim in self.animations.values():
-            if anim.animation_filepath:
-                shutil.copy2(anim.animation_filepath,
-                    output_folder + "/character/sprites/" + os.path.basename(anim.animation_filepath))
-            if anim.hurt_animation_filepath:
-                shutil.copy2(output_folder + anim.hurt_animation_filepath,
-                    output_folder + "/character/sprites/" + os.path.basename(anim.hurt_animation_filepath))
 
 
     def create_character_folder(self, output_folder, mapping):
@@ -216,8 +202,17 @@ class RivalsCharacter():
                     frame_count = hurt_filename.split("_strip")[1].split(".")[0]
                     output_filename = output_folder + "/character/sprites/" + rivals_anim_name + "_hurt_strip" + frame_count + ".png"
                     shutil.copy2(hurt_filename, output_filename)
-
-                    
+                attack_script = glob.glob(output_folder + "/raw_output/" + anim_number + ".gml")
+                if attack_script:
+                    attack_script = attack_script[0]
+                    output_filename = output_folder + "/character/scripts/attacks/" + rivals_anim_name + ".gml"
+                    shutil.copy2(attack_script, output_filename)
+                    with open(output_filename, 'r') as file:
+                        filedata = file.read()
+                        filedata = filedata.replace(anim_number, rivals_anim_name)
+                        filedata = filedata.replace("_" + rivals_anim_name, "_" + rivals_anim_name.upper())
+                    with open(output_filename, 'w') as file:
+                        file.write(filedata)
 
 
 class RivalsAnimation:

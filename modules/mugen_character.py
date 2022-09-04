@@ -157,6 +157,7 @@ class MugenCharacter():
         self.create_rivals_config_ini(final_character)
         load_gml_offset = self.create_rivals_animation_sheets(output_folder)
         self.convert_rivals_animations_and_attacks(final_character, load_gml_offset)
+        final_character.unparse_attack_scripts(output_folder)
         return final_character
 
     # Converts the config.ini file based on information from the .def file
