@@ -49,9 +49,9 @@ def guess_input_type(input_folder):
 def create_character_object(input_folder):
     input_type = guess_input_type(input_folder)
     if input_type == "rivals":
-        return RivalsCharacter(input_folder)
+        return RivalsCharacter()
     elif input_type == "mugen":
-        return MugenCharacter(input_folder)
+        return MugenCharacter()
     else:
         raise Exception("Error: No valid object for this type")
 
@@ -80,10 +80,10 @@ if __name__ == "__main__":
 
     # Determine the folder structure
     if button_mapping_file:
-        print("Converting according to the given button mapping.")
+        print("Converting according to the button mapping.")
         print("")
     elif button_mapping_file == None:
-        print("No button mapping given. Will output a raw animation folder.")
+        print("No button mapping given. Will only output a raw animation folder.")
         print("")
 
     # Determine the output type
@@ -109,15 +109,11 @@ if __name__ == "__main__":
         os.mkdir(output_folder)
 
     # Conversion
-    base_character = create_character_object(input_folder)
-    base_character.parse()
+    character = create_character_object(input_folder)
+    character.parse(input_folder)
+    if chosen_output == "1":
+        output_character = character.convert_to_rivals(output_folder)
+    elif chosen_output == "2":
+        output_character = character.convert_to_mugen(output_folder)
     if button_mapping_file:
-        if chosen_output == "1":
-            base_character.convert_to_rivals_mapped(output_folder, button_mapping_file)
-        elif chosen_output == "2":
-            base_character.convert_to_mugen_mapped(output_folder, button_mapping_file)
-    else:
-        if chosen_output == "1":
-            base_character.convert_to_rivals_raw(output_folder)
-        elif chosen_output == "2":
-            base_character.convert_to_mugen_raw(output_folder)
+        output_character.create_character_folder(output_folder, button_mapping_file)

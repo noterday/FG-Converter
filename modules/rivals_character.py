@@ -1,4 +1,4 @@
-import re, os, shutil
+import re, os, shutil, glob
 
 class RivalsCharacter():
     AnimationNames = ['idle', 'walk', 'walkturn', 'jump', 'jumpstart', 'walljump', 'doublejump',
@@ -9,14 +9,15 @@ class RivalsCharacter():
         'dtilt', 'nair', 'fair', 'bair', 'dair', 'uair', 'taunt']
 
     # Creates the object with empty values
-    def __init__(self, base_folder = None):
-        self.base_folder = base_folder
+    def __init__(self):
+        self.base_folder = None
         self.config_ini = {}
         self.init_script = {}
         self.animations = {anim_name : RivalsAnimation(anim_name) for anim_name in RivalsCharacter.AnimationNames}
 
     # Reads from the mugen character file to create the object
-    def parse(self):
+    def parse(self, base_folder):
+        self.base_folder = base_folder
         self.parse_config_ini()
         self.parse_load_gml()
         self.parse_init_gml()
@@ -32,16 +33,8 @@ class RivalsCharacter():
         self.unparse_spritesheets(output_folder)
 
     # Returns itself if the conversion type is Rivals
-    def convert_to_rivals_raw(self, output_folder):
+    def convert_to_rivals(self, output_folder):
         print("Converting in place from Rivals to Rivals")
-        os.mkdir(output_folder + "/character")
-        os.mkdir(output_folder + "/character/scripts")
-        os.mkdir(output_folder + "/character/scripts/attacks")
-        os.mkdir(output_folder + "/character/sprites")
-        self.unparse_character(output_folder)
-
-    def convert_to_rivals_mapped(output_folder, button_mapping_file):
-        print("Converting in place from Rivals to Rivals, button mapping ignored.")
         os.mkdir(output_folder + "/character")
         os.mkdir(output_folder + "/character/scripts")
         os.mkdir(output_folder + "/character/scripts/attacks")
@@ -187,14 +180,36 @@ class RivalsCharacter():
     def unparse_spritesheets(self, output_folder):
         for anim in self.animations.values():
             if anim.animation_filepath:
-                shutil.copy2(self.base_folder + anim.animation_filepath,
-                    output_folder + "/character_files/" + anim.animation_filepath)
+                shutil.copy2(anim.animation_filepath,
+                    output_folder + "/character/sprites/" + os.path.basename(anim.animation_filepath))
             if anim.hurt_animation_filepath:
-                shutil.copy2(self.base_folder + anim.hurt_animation_filepath,
-                    output_folder + "/character_files/" + anim.hurt_animation_filepath)
+                shutil.copy2(output_folder + anim.hurt_animation_filepath,
+                    output_folder + "/character/sprites/" + os.path.basename(anim.hurt_animation_filepath))
 
-    def create_default_empty_char():
-        return RivalsCharacter()
+
+    def create_character_folder(self, output_folder, mapping):
+        # 1. Have it create a dict of rivals animations with the right name and folder, replacing the one already used
+        # 2. final_character.unparse_spritesheets()
+
+        os.mkdir(output_folder + "/character")
+        os.mkdir(output_folder + "/character/scripts")
+        os.mkdir(output_folder + "/character/scripts/attacks")
+        os.mkdir(output_folder + "/character/sprites")
+
+        mapped_anims = {}
+        f = open(mapping.strip(), encoding="utf-8")
+        lines = f.readlines()
+        for line in lines:
+            if "=" in line:
+                line = line.replace(" ", "").replace("\n", "")
+                rivals_anim_name = line.split("=")[0]
+                anim_number = line.split("=")[1]
+                image_filename = glob.glob(output_folder + "/raw_output/" + anim_number + "_strip*.png")
+                if image_filename:
+                    image_filename = image_filename[0]
+                    frame_count = image_filename.split("_strip")[1].split(".")[0]
+                    output_filename = output_folder + "/character/sprites/" + rivals_anim_name + "_strip" + frame_count + ".png"
+                    shutil.copy2(image_filename, output_filename)
 
 
 class RivalsAnimation:

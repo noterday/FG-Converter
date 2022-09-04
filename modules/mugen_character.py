@@ -29,40 +29,17 @@ class MugenAnimationElement:
 
 class MugenCharacter():
     # Creates a new character with empty values
-    def __init__(self, base_folder):
-        self.base_folder = base_folder
+    def __init__(self):
         self.def_file = {}
         self.sprites = {}
         self.animations = {}
     
-    def convert_to_rivals_mapped(self, output_folder, mapping):
-        # Folder setup
-        os.mkdir(output_folder + "/character")
-        os.mkdir(output_folder + "/character/scripts")
-        os.mkdir(output_folder + "/character/scripts/attacks")
-        os.mkdir(output_folder + "/character/sprites")
-        # Convert
-        final_character = self.convert_to_rivals_raw(output_folder)
-        self.move_mapped_files(final_character, mapping)
-        # 1. Have it create a dict of rivals animations with the right name and folder, replacing the one already used
-        # 2. final_character.unparse_spritesheets()
-
-    def convert_to_rivals_raw(self, output_folder):
-        os.mkdir(output_folder + "/raw_output")
-        # Convert
-        path = os.path.dirname(__file__)
-        final_character = RivalsCharacter.create_default_empty_char()
-        load_gml_offset = self.create_rivals_animation_sheets(output_folder)
-        self.convert_rivals_animations_and_attacks(final_character, load_gml_offset)
-        final_character.unparse_attack_scripts(output_folder)
-        return final_character
-    
-    def convert_to_mugen_mapped(self, output_folder, mapping):
+    def convert_to_mugen(self, output_folder):
         pass
 
-
     # Reads from the mugen character file to create the object
-    def parse(self):
+    def parse(self, base_folder):
+        self.base_folder = base_folder
         self.def_file = self.parse_def_file()
         self.sprites = self.parse_sff_file()
         self.animations = self.parse_air_file() # TODO: Let airfile parser handle loops
@@ -170,19 +147,16 @@ class MugenCharacter():
         pass
 
     # Creates a RivalsCharacter object using this object's data
-    def convert_to_rivals(self, output_folder, input_mapping_file):
+    def convert_to_rivals(self, output_folder):
         # Create the rivals character object
+        os.mkdir(output_folder + "/raw_output")
+
         path = os.path.dirname(__file__)
-        final_character = RivalsCharacter(path + "/base-character-files/Sandbert-Scripts")
-        final_character.parse_folder()
-        final_character.base_folder = self.base_folder
+        final_character = RivalsCharacter()
         # Do all the conversion work here
         self.create_rivals_config_ini(final_character)
-        input_mapping = {}
-        if input_mapping_file:
-            input_mapping = self.read_input_mapping_file(input_mapping_file)
-        load_gml_offset = self.create_rivals_animation_sheets(final_character, output_folder, input_mapping)
-        self.convert_rivals_animations_and_attacks(final_character, load_gml_offset, input_mapping)
+        load_gml_offset = self.create_rivals_animation_sheets(output_folder)
+        self.convert_rivals_animations_and_attacks(final_character, load_gml_offset)
         return final_character
 
     # Converts the config.ini file based on information from the .def file
@@ -208,15 +182,8 @@ class MugenCharacter():
         return input_mapping
 
     # Converts the animations to the Rivals spritesheet format
-    def create_rivals_animation_sheets(self, output_folder, input_mapping = {}):
+    def create_rivals_animation_sheets(self, output_folder):
         offsets = {}
-        if input_mapping:
-            for mapping in input_mapping.values():
-                if len(mapping) > 1:
-                    if mapping[0] in self.animations:
-                        new_animation = copy.deepcopy(self.animations[mapping[0]])
-                        new_animation.extra_conversion_param = mapping[1]
-                        self.animations[str(mapping[0])+mapping[1]] = new_animation
         for id, animation in self.animations.items():
             if id == 9960:
                 #find why this one crashes (on sf3 ryu)
@@ -282,14 +249,14 @@ class MugenCharacter():
                 spritesheet.save(output_folder + "/raw_output/" + filename)
                 hurtboxsheet.save(output_folder + "/raw_output/" + hurt_filename)
             except Exception:
-                pass
+                print("Failed to save the image " + filename)
             offsets[id] = biggest_axis_position
             animation.converted_sheet = "/raw_output/" + filename
             animation.converted_hurt_sheet ="/raw_output/" + hurt_filename
         return offsets
 
     # Converts the animation and attack scripts to Rivals formats
-    def convert_rivals_animations_and_attacks(self, final_character, load_gml_offset, input_mapping = {}):
+    def convert_rivals_animations_and_attacks(self, final_character, load_gml_offset):
         for animation_number, animation_obj in self.animations.items():
             if animation_number == 9960:
                 break # todo: find why this one breaks
@@ -347,16 +314,6 @@ class MugenCharacter():
                 idle_sprite = Image.open(final_character.animations['idle'].filename)
                 height = idle_sprite.size[1]
                 final_character.init_script['char_height'] = str(height)
-
-
-    def move_mapped_files(self, final_character, mapping):
-        # 1. Have it create a dict of rivals animations with the right name and folder, replacing the one already used
-        # 2. final_character.unparse_spritesheets()
-        mapped_anims = {}
-        f = open(mapping.strip(), encoding="utf-8")
-        lines = f.readlines()
-        for line in lines:
-            print(line)
 
 
 # Modifies the given image to make it transparent (assuming the first pixel of the image is the background color)
