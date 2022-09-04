@@ -210,6 +210,14 @@ class RivalsCharacter():
                     frame_count = image_filename.split("_strip")[1].split(".")[0]
                     output_filename = output_folder + "/character/sprites/" + rivals_anim_name + "_strip" + frame_count + ".png"
                     shutil.copy2(image_filename, output_filename)
+                hurt_filename = glob.glob(output_folder + "/raw_output/" + anim_number + "_hurt_strip*.png")
+                if hurt_filename:
+                    hurt_filename = hurt_filename[0]
+                    frame_count = hurt_filename.split("_strip")[1].split(".")[0]
+                    output_filename = output_folder + "/character/sprites/" + rivals_anim_name + "_hurt_strip" + frame_count + ".png"
+                    shutil.copy2(hurt_filename, output_filename)
+
+                    
 
 
 class RivalsAnimation:
