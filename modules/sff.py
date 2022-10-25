@@ -1,9 +1,12 @@
 import struct
 import array
 from PIL import Image
+import SFFv2
+
+import getopt, sys, os # for testing purposes only
 
 """
-The logic to read from sff1 file is mostly based off sffconverter on github.
+The logic to read from sff1 file is based off sffconverter on github.
 
 https://github.com/chikuchikugonzalez/sffconverter/
 """
@@ -28,6 +31,7 @@ class SFFSprite():
         self.paletteNumber = 0
         self.data = None
         self.compressedData = None
+        self.final_image = None
 
 
 class PCXImage():
@@ -62,59 +66,14 @@ class PCXImage():
         dataLength = self.bytesPerLine * self.height
         # Uncompressing
         self.compressedData = data[128:-769]
-        self.data = PCXImage.decompressData(self.compressedData, self.width * self.height)
-
-    def decompressData(data, maxLength):
-        """Uncompressing PCX Image data as RLE"""
-        bytes = array.array('B')
-        length = len(data)
-        i = 0
-        total = 0
-        while i < length:
-            byte = data[i]
-            val = byte
-            #val = struct.unpack('<B', byte)[0]
-            if (val & 0xC0) == 0xC0:
-                # Run Length
-                count = val & 0x3F
-                byte = data[i + 1]
-                i += 1
-            else:
-                count = 1
-            i += 1
-            # Append
-            for j in range(0, count):
-                bytes.append(byte)
-                total += 1
-                if total >= maxLength:
-                    # Over
-                    return bytes.tobytes()
-        return bytes.tobytes()
+        self.data = decompress_rle_pcx(self.compressedData, self.width * self.height)
 
 
-def read_sff(file):
-    palettes = [] # unused
-    sprites = []
-    binary_sff = open(file, "rb")
-    signature = binary_sff.read(12)
-    version = binary_sff.read(4)
-    if not signature == b"ElecbyteSpr\x00":
-        raise Exception("Input source is not Elecbyte Sprite File")
-    if version == b'\x00\x01\x00\x01':
-        palettes, sprites = get_sprites_from_sff1(binary_sff)
-    elif version == b'\x00\x00\x00\x02':
-        raise  Exception("SFFv2 not yet supported.")
-    elif version == b'\x00\x01\x00\x02':
-        raise  Exception("SFFv2.1 not yet supported.")
-    else:
-        raise  Exception("SFF version is not recognized")
-    return sprites
-
-
-def get_sprites_from_sff1(fp):
+def get_sprites_from_sff1(fp, used_pal):
     # Getting the header information
     palettes = []
     sprites = []
+    sprites_dict = {}
     numGroups, numSprites = struct.unpack('<II', fp.read(8))
     subfileOffset, headerSize = struct.unpack('<II', fp.read(8))
     pal_type = fp.read(1)
@@ -139,7 +98,6 @@ def get_sprites_from_sff1(fp):
         sprite.image = imageNo
         sprite.axis = (axisX, axisY)
         sprite.linkedIndex = linkedIndex
-
         if linkedIndex == 0:
             fp.seek(offset + 32, 0)
             data = fp.read(dataSize)
@@ -169,22 +127,117 @@ def get_sprites_from_sff1(fp):
             sprite.width = sprites[linkedIndex].width
             sprite.height = sprites[linkedIndex].height
             sprite.paletteNumber = sprites[linkedIndex].paletteNumber
+        sprite.final_image = create_image(used_pal, sprite)
+        sprites_dict[(str(sprite.group), str(sprite.image))] = sprite
         sprites.append(sprite)
         offset = nextOffset
-    return palettes, sprites
+    return sprites_dict
 
 
-def create_image(palette_file, sprite):
-    act_file = open(palette_file, "rb")
-    act_palette = []
-    for i in range(256): #  There is no version number written in the file. The file is 768 or 772 bytes long and contains 256 RGB colors. The first color in the table is index zero. There are three bytes per color in the order red, green, blue. If the file is 772 bytes long there are 4 additional bytes remaining. Two bytes for the number of colors to use. Two bytes for the color index with the transparency color to use. If loaded into the Colors palette, the colors will be installed in the color swatch list as RGB colors.
-        r = struct.unpack('<B', act_file.read(1))[0]
-        g = struct.unpack('<B', act_file.read(1))[0]
-        b = struct.unpack('<B', act_file.read(1))[0]
-        act_palette = [r, g, b] + act_palette
+def get_palettes_from_sff2(file):
+    palettes = []
+
+    sffv2_file = SFFv2.SFF2File(file)
+    numOfpaletes = SFFv2.get_num_pal(sffv2_file)
+
+    for i in range(numOfpaletes):
+        pal = SFFv2.get_pal(sffv2_file, i)
+        del pal[3::4]
+        palettes.append(pal)
+    return palettes
+
+
+def get_sprites_from_sff2(file, palette):
+    sprites_dict = {}
+
+    sffv2_file = SFFv2.SFF2File(file)
+    numOfSprites = SFFv2.get_num_sprites(sffv2_file)
+
+    for i in range(numOfSprites):
+        sprite = SFFSprite()
+        sprite_node = sffv2_file.GetSpriteNode(i)
+        sprite.group = sprite_node.GetGroupNo()
+        sprite.image = sprite_node.GetSprNo()
+        sprite.width = sprite_node.GetWidth()
+        sprite.height = sprite_node.GetHeight()
+        sprite.axis = (sprite_node.GetXaxis(), sprite_node.GetYaxis())
+        sprite_data = SFFv2.get_sprite(sffv2_file, i)
+        try:
+            sprite.final_image = Image.frombytes(
+                'L', (sprite.width, sprite.height),
+                bytes(sprite_data))
+        except:
+            print("Sprite " + str(i) + " could not be parsed")
+        if sprite.final_image:
+            sprite.final_image.putpalette(palette, "RGB")
+        sprites_dict[(str(sprite.group), str(sprite.image))] = sprite
+    return sprites_dict
+
+
+def decompress_rle_pcx(data, maxLength):
+        """Uncompressing PCX Image data as RLE"""
+        bytes = array.array('B')
+        length = len(data)
+        i = 0
+        total = 0
+        while i < length:
+            byte = data[i]
+            val = byte
+            if (val & 0xC0) == 0xC0:
+                # Run Length
+                count = (val & 0x3F)
+                byte = data[i + 1]
+                i += 1
+            else:
+                count = 1
+            i += 1
+            # Append
+            for j in range(0, count):
+                bytes.append(byte)
+                total += 1
+                if total >= maxLength:
+                    # Over
+                    return bytes.tobytes()
+        return bytes.tobytes()
+
+
+def create_image(palette, sprite):
     try:
         image = Image.frombytes('L', (sprite.width, sprite.height), sprite.data)
-        image.putpalette(act_palette, "RGB")
+        image.putpalette(palette, "RGB")
         return image
     except:
         return Image.new('RGB', (sprite.width, sprite.height))
+
+
+def read_sff(sprite_file, pal_files):
+    binary_sff = open(sprite_file, "rb")
+    signature = binary_sff.read(12)
+    version = binary_sff.read(4)
+    if not signature == b"ElecbyteSpr\x00":
+        raise Exception("Input source is not Elecbyte Sprite File")
+    if version == b'\x00\x01\x00\x01':
+        palettes = get_palettes_from_pal_files(pal_files)
+        sprites = get_sprites_from_sff1(binary_sff, palettes[0])
+    elif version == b'\x00\x00\x00\x02':
+        palettes = get_palettes_from_sff2(sprite_file)
+        sprites = get_sprites_from_sff2(sprite_file, palettes[0])
+    elif version == b'\x00\x01\x00\x02':
+        raise  Exception("SFFv2.1 not yet supported.") # maybe above code works?
+    else:
+        raise  Exception("SFF version is not recognized")
+    return sprites, palettes
+
+
+def get_palettes_from_pal_files(pal_files):
+    palettes = []
+    for file in pal_files:
+        act_file = open(file, "rb")
+        act_palette = []
+        for i in range(256):
+            r = struct.unpack('<B', act_file.read(1))[0]
+            g = struct.unpack('<B', act_file.read(1))[0]
+            b = struct.unpack('<B', act_file.read(1))[0]
+            act_palette = [r, g, b] + act_palette
+        palettes.append(act_palette)
+    return palettes

@@ -1,5 +1,5 @@
 from modules.rivals_character import RivalsCharacter, RivalsAnimation
-from modules.sff import read_sff, create_image
+from modules.sff import read_sff
 import re, os, configparser, subprocess, copy
 from PIL import Image
 
@@ -31,6 +31,7 @@ class MugenCharacter():
     # Creates a new character with empty values
     def __init__(self):
         self.def_file = {}
+        self.palettes = {}
         self.sprites = {}
         self.animations = {}
     
@@ -41,7 +42,7 @@ class MugenCharacter():
     def parse(self, base_folder):
         self.base_folder = base_folder
         self.def_file = self.parse_def_file()
-        self.sprites = self.parse_sff_file()
+        self.parse_sff_file()
         self.animations = self.parse_air_file() # TODO: Let airfile parser handle loops
 
     # Parses the .def file to find the author information and path of other useful files
@@ -63,12 +64,15 @@ class MugenCharacter():
                     def_file["Files"]["anim"] = file
         return def_file
 
-    # Uncompresses the .sff file with sff2png.exe, and parses the content of it's sprite-sff.def file (sprite info)
+    # Parses the .sff and palette files
     def parse_sff_file(self):
-        sprites = {}
-        for sprite in read_sff(self.base_folder + "/" + self.def_file["Files"]["sprite"]):
-            sprites[(str(sprite.group), str(sprite.image))] = sprite
-        return sprites
+        sprite_file = self.base_folder + "/" + self.def_file["Files"]["sprite"]
+        pal_files = []
+        for key, value in self.def_file["Files"].items():
+            if key.startswith("pal"):
+                pal_files.append(self.base_folder + "/" + value)
+
+        self.sprites, self.palettes = read_sff(sprite_file, pal_files)
 
     # Parse the content of the .air file (animation information)
     def parse_air_file(self):
@@ -195,7 +199,7 @@ class MugenCharacter():
             for element in animation.animation_elements:
                 # This is iterating through 1 frame of the animation at a time
                 sprite = self.sprites[(element.group_number, element.image_number)]
-                image = create_image(self.base_folder + "/" + self.def_file['Files']['pal1'], sprite)
+                image = sprite.final_image
                 images.append(image)
                 # Flip image according to optional arguments
                 image = images[-1]
