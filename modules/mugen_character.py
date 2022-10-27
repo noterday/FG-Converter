@@ -90,7 +90,7 @@ class MugenCharacter():
             line = line.replace(" ", "")
             if re.match("[Begin Action [0-9]+]", line):
                 # Matches the start of a new action
-                current_action_nb = int(line.lstrip("[Begin Action").rstrip("]"))
+                current_action_nb = int(line.split("[BeginAction")[1].split("]")[0])
                 animations[current_action_nb] = MugenAnimation(current_action_nb)
                 wanted_clsn2default_nb = 0
                 stored_clsn1 = []
