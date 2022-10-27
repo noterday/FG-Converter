@@ -78,21 +78,12 @@ if __name__ == "__main__":
     else:
         input_folder = args[0]
 
-    # Determine the folder structure
-    if button_mapping_file:
-        print("Converting according to the button mapping.")
-        print("")
-    elif button_mapping_file == None:
-        print("No button mapping given. Will only output a raw animation folder.")
-        print("")
-
     # Determine the output type
     if not chosen_output:
         chosen_output = prompt_for_output_type()
     chosen_output = chosen_output.replace(" ", "")
     if chosen_output not in ["1", "2"]:
         print("Invalid output type!")
-
 
     # Basic folder structure
     NAMES = ["rivals", "mugen"]
@@ -107,6 +98,12 @@ if __name__ == "__main__":
             new_filename_counter += 1
         output_folder += str(new_filename_counter)
         os.mkdir(output_folder)
+
+    # Display the folder structure
+    print("Saving the converted files to '" + output_folder + "/raw_output'")
+    if button_mapping_file:
+        print("Input mapping given, the converted character will be saved to '" + output_folder + "/character'")
+    print("")
 
     # Conversion
     character = create_character_object(input_folder)
