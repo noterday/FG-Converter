@@ -1,5 +1,6 @@
 import struct
 import array
+from io import BytesIO
 from PIL import Image
 import SFFv2
 
@@ -127,7 +128,7 @@ def get_sprites_from_sff1(fp, used_pal):
             sprite.width = sprites[linkedIndex].width
             sprite.height = sprites[linkedIndex].height
             sprite.paletteNumber = sprites[linkedIndex].paletteNumber
-        sprite.final_image = create_image(used_pal, sprite)
+        sprite.final_image = create_image(used_pal, sprite, i)
         sprites_dict[(str(sprite.group), str(sprite.image))] = sprite
         sprites.append(sprite)
         offset = nextOffset
@@ -136,10 +137,8 @@ def get_sprites_from_sff1(fp, used_pal):
 
 def get_palettes_from_sff2(file):
     palettes = []
-
     sffv2_file = SFFv2.SFF2File(file)
     numOfpaletes = SFFv2.get_num_pal(sffv2_file)
-
     for i in range(numOfpaletes):
         pal = SFFv2.get_pal(sffv2_file, i)
         del pal[3::4]
@@ -147,7 +146,7 @@ def get_palettes_from_sff2(file):
     return palettes
 
 
-def get_sprites_from_sff2(file, palette):
+def get_sprites_from_sff2(file, palettes):
     sprites_dict = {}
 
     sffv2_file = SFFv2.SFF2File(file)
@@ -161,15 +160,22 @@ def get_sprites_from_sff2(file, palette):
         sprite.width = sprite_node.GetWidth()
         sprite.height = sprite_node.GetHeight()
         sprite.axis = (sprite_node.GetXaxis(), sprite_node.GetYaxis())
+        sprite.paletteNumber = sprite_node.GetPalInd()
         sprite_data = SFFv2.get_sprite(sffv2_file, i)
         try:
-            sprite.final_image = Image.frombytes(
-                'L', (sprite.width, sprite.height),
-                bytes(sprite_data))
-        except:
-            print("Sprite " + str(i) + " could not be parsed")
-        if sprite.final_image:
-            sprite.final_image.putpalette(palette, "RGB")
+            if sprite_node.GetFmt() == 1: # Invalid encoding
+                raise Exception
+            elif sprite_node.GetFmt() in (2, 3, 4): # SFFv2
+                sprite.final_image = Image.frombytes(
+                    'L', (sprite.width, sprite.height),
+                    bytes(sprite_data))
+            elif sprite_node.GetFmt() in (10, 11, 12): # Sffv2.1 png files
+                sprite_data = sprite_data[4:] # For some reason there is always 4 unecessary bytes before the png
+                sprite.final_image = Image.open(BytesIO(bytes(sprite_data[4:])))
+            sprite.final_image.putpalette(palettes[sprite.paletteNumber], "RGB")
+        except Exception as e:
+            print("Unable to extract image " + str(i) + " from .sff file. (" + str(e) + ")")
+            sprite.final_image = create_empty_image(sprite)
         sprites_dict[(str(sprite.group), str(sprite.image))] = sprite
     return sprites_dict
 
@@ -201,14 +207,17 @@ def decompress_rle_pcx(data, maxLength):
         return bytes.tobytes()
 
 
-def create_image(palette, sprite):
+def create_image(palette, sprite, i):
     try:
         image = Image.frombytes('L', (sprite.width, sprite.height), sprite.data)
         image.putpalette(palette, "RGB")
         return image
-    except:
-        return Image.new('RGB', (sprite.width, sprite.height))
+    except Exception as e:
+        print("Unable to extract image " + str(i) + " from .sff file. (" + str(e) + ")")
+        return create_empty_image(sprite)
 
+def create_empty_image(sprite):
+    return Image.new('RGB', (sprite.width, sprite.height))
 
 def read_sff(sprite_file, pal_files):
     binary_sff = open(sprite_file, "rb")
@@ -221,9 +230,10 @@ def read_sff(sprite_file, pal_files):
         sprites = get_sprites_from_sff1(binary_sff, palettes[0])
     elif version == b'\x00\x00\x00\x02':
         palettes = get_palettes_from_sff2(sprite_file)
-        sprites = get_sprites_from_sff2(sprite_file, palettes[0])
+        sprites = get_sprites_from_sff2(sprite_file, palettes)
     elif version == b'\x00\x01\x00\x02':
-        raise  Exception("SFFv2.1 not yet supported.") # maybe above code works?
+        palettes = get_palettes_from_sff2(sprite_file)
+        sprites = get_sprites_from_sff2(sprite_file, palettes)
     else:
         raise  Exception("SFF version is not recognized")
     return sprites, palettes
