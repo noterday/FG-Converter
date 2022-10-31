@@ -11,21 +11,19 @@ def print_help():
     print("-h, --help")
     print("     Print this help")
     print("")
-    print("-m <file>, --mapping-file=<file>")
-    print("     Use this file to map animations from the input character to animations in the output character")
-    print("     If this argument is given, a ready-to-use character directory containing the necessary animations will be generated.")
-    print("     If this argument is not given, a raw dump of all converted animations will be generated instead.")
+    print("-m <file>, --mapping=<file>")
+    print("     A text file mapping animation names from the input to the output engine.")
+    print("     If given, a structured character folder for the output engine will be generated.")
     print("")
     print("-o <value>, --output=<value>")
-    print("     The game engine the character will be converted into.")
-    print("     Value should be one of the following numbers: ")
+    print("     The game engine to convert toward :")
     print("         1. Rivals of Aether")
     print("         2. Mugen (work-in-progress)")
     print("")
     print("<input>")
-    print("     The path to the root directory of the character to convert.")
-    print("     For Mugen characters, the directory must contain a .def file")
-    print("     For Rivals characters, the directory must contain a config.ini file")
+    print("     The root directory of the character to be converted.")
+    print("     For Mugen inputs, the directory must contain a .def file")
+    print("     For Rivals inputs, the directory must contain a config.ini file")
 
 
 def prompt_for_output_type():
@@ -53,7 +51,7 @@ def create_character_object(input_folder):
     elif input_type == "mugen":
         return MugenCharacter()
     else:
-        raise Exception("Error: No valid object for this type")
+        raise Exception("Error: Invalid input folder.")
 
 
 if __name__ == "__main__":
