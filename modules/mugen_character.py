@@ -253,6 +253,7 @@ class MugenCharacter():
             try:
                 spritesheet.save(output_folder + "/raw_output/" + filename)
                 hurtboxsheet.save(output_folder + "/raw_output/" + hurt_filename)
+                print("Saving image " + filename)
             except Exception:
                 print("Failed to save the image " + filename)
             offsets[id] = biggest_axis_position
