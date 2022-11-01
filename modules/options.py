@@ -1,14 +1,12 @@
 import os
 
-
-
-
-
 # Parses the command line arguments given by the user
 def parse_arguments(optlist, args):
-    global input_folder, output_folder, button_mapping_file, input_engine, chosen_output
+    global input_folder, output_folder, button_mapping_file, input_engine, chosen_output, verbose
     
     button_mapping_file = None
+    verbose = None
+
     # Parsing the options
     for option, value in optlist:
         if option in ['-h', '--help']:
@@ -18,6 +16,8 @@ def parse_arguments(optlist, args):
             button_mapping_file = value
         elif option in ['-o', '--output']:
             chosen_output = value
+        elif option in ['-v', '--verbose']:
+            verbose = True
 
     # Parse the argument (should be the input folder)
     if len(args) != 1:
@@ -56,6 +56,9 @@ def print_help():
     print("     The game engine to convert toward :")
     print("         1. Rivals of Aether")
     print("         2. Mugen (work-in-progress)")
+    print("")
+    print("-v, --verbose")
+    print("     Displays additional progress and error information.")
     print("")
     print("<input>")
     print("     The root directory of the character to be converted.")

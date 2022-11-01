@@ -260,9 +260,11 @@ class MugenCharacter():
             try:
                 spritesheet.save(out + "/raw_output/" + filename)
                 hurtboxsheet.save(out + "/raw_output/" + hurt_filename)
-                print("Saving image " + filename)
+                if options.verbose:
+                    print("Saving image " + filename)
             except Exception:
-                print("Failed to save the image " + filename)
+                if options.verbose:
+                    print("Failed to save the image " + filename)
             offsets[id] = biggest_axis_position
             animation.converted_sheet = "/raw_output/" + filename
             animation.converted_hurt_sheet ="/raw_output/" + hurt_filename

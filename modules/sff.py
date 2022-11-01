@@ -1,7 +1,8 @@
-import struct
-import array
+import struct, array
 from io import BytesIO
 from PIL import Image
+
+import modules.options as options
 import SFFv2
 
 
@@ -174,7 +175,8 @@ def get_sprites_from_sff2(file, palettes):
                 sprite.final_image = Image.open(BytesIO(bytes(sprite_data[4:])))
             sprite.final_image.putpalette(palettes[sprite.paletteNumber], "RGB")
         except Exception as e:
-            print("Unable to extract image " + str(i) + " from .sff file. (" + str(e) + ")")
+            if options.verbose:
+                print("Unable to extract image " + str(i) + " from .sff file. (" + str(e) + ")")
             sprite.final_image = create_empty_image(sprite)
         sprites_dict[(str(sprite.group), str(sprite.image))] = sprite
     return sprites_dict
@@ -213,11 +215,14 @@ def create_image(palette, sprite, i):
         image.putpalette(palette, "RGB")
         return image
     except Exception as e:
-        print("Unable to extract image " + str(i) + " from .sff file. (" + str(e) + ")")
+        if options.verbose:
+            print("Unable to extract image " + str(i) + " from .sff file. (" + str(e) + ")")
         return create_empty_image(sprite)
+
 
 def create_empty_image(sprite):
     return Image.new('RGB', (sprite.width, sprite.height))
+
 
 def read_sff(sprite_file, pal_files):
     binary_sff = open(sprite_file, "rb")
@@ -235,7 +240,7 @@ def read_sff(sprite_file, pal_files):
         palettes = get_palettes_from_sff2(sprite_file)
         sprites = get_sprites_from_sff2(sprite_file, palettes)
     else:
-        raise  Exception("SFF version is not recognized")
+        raise Exception("SFF version is not recognized")
     return sprites, palettes
 
 

@@ -6,7 +6,7 @@ from modules.rivals_character import RivalsCharacter
 
 
 if __name__ == "__main__":
-    optlist, args = getopt.getopt(sys.argv[1:], 'hm:o:', ['help', 'mapping', 'output'])
+    optlist, args = getopt.getopt(sys.argv[1:], 'hvm:o:', ['help', 'mapping', 'output', 'verbose'])
     options.parse_arguments(optlist, args)
 
     # Create the basic folder structure
@@ -23,7 +23,6 @@ if __name__ == "__main__":
     print("Saving the converted files to '" + options.output_folder + "/raw_output'")
     if options.button_mapping_file:
         print("Input mapping given, the converted character will be saved to '" + options.output_folder + "/character'")
-    print("")
 
     # Create the input character object
     if options.input_engine == "rivals":
