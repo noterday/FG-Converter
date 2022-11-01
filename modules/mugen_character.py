@@ -1,7 +1,12 @@
-from modules.rivals_character import RivalsCharacter, RivalsAnimation
-from modules.sff import read_sff
-import re, os, configparser, subprocess, copy
+import re, os, configparser
 from PIL import Image
+
+
+from modules.rivals_character import RivalsCharacter, RivalsAnimation
+import modules.options as options
+import modules.sff as sff
+
+
 
 # Represents an animation as defined in the .air file
 class MugenAnimation:
@@ -35,12 +40,12 @@ class MugenCharacter():
         self.sprites = {}
         self.animations = {}
     
-    def convert_to_mugen(self, output_folder):
+    def convert_to_mugen(self):
         pass
 
     # Reads from the mugen character file to create the object
-    def parse(self, base_folder):
-        self.base_folder = base_folder
+    def parse(self):
+        self.base_folder = options.input_folder
         self.def_file = self.parse_def_file()
         self.parse_sff_file()
         self.animations = self.parse_air_file() # TODO: Let airfile parser handle loops
@@ -72,7 +77,7 @@ class MugenCharacter():
             if key.startswith("pal"):
                 pal_files.append(self.base_folder + "/" + value)
 
-        self.sprites, self.palettes = read_sff(sprite_file, pal_files)
+        self.sprites, self.palettes = sff.read_sff(sprite_file, pal_files)
 
     # Parse the content of the .air file (animation information)
     def parse_air_file(self):
@@ -151,17 +156,19 @@ class MugenCharacter():
         pass
 
     # Creates a RivalsCharacter object using this object's data
-    def convert_to_rivals(self, output_folder):
+    def convert_to_rivals(self):
+        out = options.output_folder
+        
         # Create the rivals character object
-        os.mkdir(output_folder + "/raw_output")
+        os.mkdir(out + "/raw_output")
 
         path = os.path.dirname(__file__)
         final_character = RivalsCharacter()
         # Do all the conversion work here
         self.create_rivals_config_ini(final_character)
-        load_gml_offset = self.create_rivals_animation_sheets(output_folder)
+        load_gml_offset = self.create_rivals_animation_sheets(out)
         self.convert_rivals_animations_and_attacks(final_character, load_gml_offset)
-        final_character.unparse_attack_scripts(output_folder)
+        final_character.unparse_attack_scripts(out)
         return final_character
 
     # Converts the config.ini file based on information from the .def file
@@ -187,7 +194,7 @@ class MugenCharacter():
         return input_mapping
 
     # Converts the animations to the Rivals spritesheet format
-    def create_rivals_animation_sheets(self, output_folder):
+    def create_rivals_animation_sheets(self, out):
         offsets = {}
         for id, animation in self.animations.items():
             if id == 9960:
@@ -251,8 +258,8 @@ class MugenCharacter():
             filename = str(id) + "_strip" + str(len(images)) + '.png'
             hurt_filename = str(id)+ "_hurt_strip" + str(len(images)) + '.png'
             try:
-                spritesheet.save(output_folder + "/raw_output/" + filename)
-                hurtboxsheet.save(output_folder + "/raw_output/" + hurt_filename)
+                spritesheet.save(out + "/raw_output/" + filename)
+                hurtboxsheet.save(out + "/raw_output/" + hurt_filename)
                 print("Saving image " + filename)
             except Exception:
                 print("Failed to save the image " + filename)

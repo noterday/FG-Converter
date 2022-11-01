@@ -4,13 +4,13 @@ from io import BytesIO
 from PIL import Image
 import SFFv2
 
-import getopt, sys, os # for testing purposes only
 
 """
 The logic to read from sff1 file is based off sffconverter on github.
 
 https://github.com/chikuchikugonzalez/sffconverter/
 """
+
 
 class SFFPalette():
     def __init__(self):
