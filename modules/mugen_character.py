@@ -185,9 +185,6 @@ class MugenCharacter():
     def create_rivals_animation_sheets(self, out):
         offsets = {}
         for id, animation in self.animations.items():
-            if id == 9960:
-                #find why this one crashes (on sf3 ryu)
-                break
             biggest_image_dimensions = [0, 0]
             biggest_axis_position = [0, 0]
             images = []
