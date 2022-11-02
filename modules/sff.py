@@ -232,7 +232,7 @@ def read_sff(sprite_file, pal_files):
         raise Exception("Input source is not Elecbyte Sprite File")
     if version == b'\x00\x01\x00\x01':
         palettes = get_palettes_from_pal_files(pal_files)
-        sprites = get_sprites_from_sff1(binary_sff, palettes[0])
+        sprites = get_sprites_from_sff1(binary_sff, palettes[options.default_palette-1])
     elif version == b'\x00\x00\x00\x02':
         palettes = get_palettes_from_sff2(sprite_file)
         sprites = get_sprites_from_sff2(sprite_file, palettes)

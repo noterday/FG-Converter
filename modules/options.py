@@ -1,9 +1,13 @@
 import os
 
+opt = 'hvm:o:p:'
+args = ['help', 'mapping', 'output', 'verbose', 'palette']
+
 # Parses the command line arguments given by the user
 def parse_arguments(optlist, args):
-    global input_folder, output_folder, button_mapping_file, input_engine, chosen_output, verbose
+    global input_folder, output_folder, button_mapping_file, input_engine, chosen_output, verbose, default_palette
     
+    default_palette = 1
     button_mapping_file = None
     verbose = None
 
@@ -18,6 +22,8 @@ def parse_arguments(optlist, args):
             chosen_output = value
         elif option in ['-v', '--verbose']:
             verbose = True
+        elif option in ['-p', '--palette']:
+            default_palette = int(value.lstrip())
 
     # Parse the argument (should be the input folder)
     if len(args) != 1:
@@ -26,6 +32,9 @@ def parse_arguments(optlist, args):
     else:
         input_folder = args[0]
 
+    # Check if given palette is valid
+    if not default_palette > 0:
+        raise Exception("The given default palette index is invalid. Must be an integer above 0.")
     
     # Determine the input type
     input_engine = guess_input_type(input_folder)
@@ -56,6 +65,9 @@ def print_help():
     print("     The game engine to convert toward :")
     print("         1. Rivals of Aether")
     print("         2. Mugen (work-in-progress)")
+    print("")
+    print("-p <index> --palette=<index>")
+    print("     The index of the palette to use as the default color.")
     print("")
     print("-v, --verbose")
     print("     Displays additional progress and error information.")

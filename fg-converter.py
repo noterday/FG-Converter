@@ -6,7 +6,7 @@ from modules.rivals_character import RivalsCharacter
 
 
 if __name__ == "__main__":
-    optlist, args = getopt.getopt(sys.argv[1:], 'hvm:o:', ['help', 'mapping', 'output', 'verbose'])
+    optlist, args = getopt.getopt(sys.argv[1:], options.opt, options.args)
     options.parse_arguments(optlist, args)
 
     # Create the basic folder structure
