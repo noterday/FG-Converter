@@ -176,9 +176,6 @@ class RivalsCharacter():
                 f.close
 
     def create_character_folder(self, out, mapping):
-        # 1. Have it create a dict of rivals animations with the right name and folder, replacing the one already used
-        # 2. final_character.unparse_spritesheets()
-
         mapped_anims = {}
         f = open(mapping.strip(), encoding="utf-8")
         lines = f.readlines()

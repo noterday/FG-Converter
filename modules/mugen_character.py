@@ -6,7 +6,7 @@ from modules.rivals_character import RivalsCharacter, RivalsAnimation
 import modules.options as options
 import modules.sff as sff
 
-
+SIZE_LIMIT = 10000 # Max image size in pixel. Temp value to avoid rare PIL crashes.
 
 # Represents an animation as defined in the .air file
 class MugenAnimation:
@@ -76,7 +76,6 @@ class MugenCharacter():
         for key, value in self.def_file["Files"].items():
             if key.startswith("pal"):
                 pal_files.append(self.base_folder + "/" + value)
-
         self.sprites, self.palettes = sff.read_sff(sprite_file, pal_files)
 
     # Parse the content of the .air file (animation information)
@@ -141,7 +140,7 @@ class MugenCharacter():
                 animations[current_action_nb].animation_elements[-1].length = int(values[4])
                 additional_values = values[5:]
                 if additional_values:
-                    animations[current_action_nb].animation_elements[-1].optional_parameters = additional_values
+                    animations[current_action_nb].animation_elements[-1].optional_parameters = list(filter(None, additional_values))
                 stored_clsn1 = []
                 stored_clsn2 = []
         return animations
@@ -162,10 +161,8 @@ class MugenCharacter():
         os.mkdir(out + "/raw_output")
         print("Saving the converted files to '" + options.output_folder + "/raw_output'")
         
-        path = os.path.dirname(__file__)
-        final_character = RivalsCharacter()
-
         # Handle the conversion
+        final_character = RivalsCharacter()
         self.create_rivals_config_ini(final_character)
         load_gml_offset = self.create_rivals_animation_sheets(out)
         self.create_rivals_animations_and_attacks(final_character, load_gml_offset)
@@ -197,6 +194,8 @@ class MugenCharacter():
                 image = images[-1]
                 for param in element.optional_parameters:
                     for char in param:
+                        if char.startswith('A'):
+                            pass # Not handled yet
                         if char == 'V':
                             images[-1] = image.transpose(Image.FLIP_TOP_BOTTOM)
                         if char == 'H':
@@ -220,7 +219,12 @@ class MugenCharacter():
                     biggest_image_dimensions[0] = image_size[0]
                 if image_size[1] > biggest_image_dimensions[1]:
                     biggest_image_dimensions[1] = image_size[1]
+
             # Create the final image file
+            if biggest_image_dimensions[0] > SIZE_LIMIT or biggest_image_dimensions[1] > SIZE_LIMIT:
+                if options.verbose:
+                    print("Animation " + str(id) + " is too large, will be skipped.")
+                break
             spritesheet = Image.new('RGBA', (biggest_image_dimensions[0]*len(images), biggest_image_dimensions[1]), (0,0,0,0))
             # Paste the elements into the new spritesheet
             for i in range(len(animation.animation_elements)):
@@ -257,10 +261,9 @@ class MugenCharacter():
     # Converts the animation and attack scripts to Rivals formats
     def create_rivals_animations_and_attacks(self, final_character, load_gml_offset):
         for animation_number, animation_obj in self.animations.items():
-            if animation_number == 9960:
-                break # todo: find why this one breaks
             rival_attack = RivalsAnimation(str(animation_number))
-            rival_attack.offset = load_gml_offset[animation_number]
+            if animation_number in load_gml_offset:
+                rival_attack.offset = load_gml_offset[animation_number]
             rival_attack.filename = self.animations[animation_number].converted_sheet
             rival_attack.hurt_filename = self.animations[animation_number].converted_hurt_sheet
             current_window_length = 0
