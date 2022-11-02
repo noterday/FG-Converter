@@ -175,15 +175,9 @@ class RivalsCharacter():
                     f.write("\n")
                 f.close
 
-
     def create_character_folder(self, out, mapping):
         # 1. Have it create a dict of rivals animations with the right name and folder, replacing the one already used
         # 2. final_character.unparse_spritesheets()
-
-        os.mkdir(out + "/character")
-        os.mkdir(out + "/character/scripts")
-        os.mkdir(out + "/character/scripts/attacks")
-        os.mkdir(out + "/character/sprites")
 
         mapped_anims = {}
         f = open(mapping.strip(), encoding="utf-8")
@@ -217,6 +211,48 @@ class RivalsCharacter():
                     with open(output_filename, 'w') as file:
                         file.write(filedata)
 
+    def create_mapped_character(self, out):
+        if options.button_mapping_file:
+           input_mapping = options.parse_button_mapping()
+
+           # Create the folder structure
+           os.mkdir(out + "/character")
+           print("Input mapping given, the converted character will be saved to '" + options.output_folder + "/character'")
+           self.create_character_folders(out + "/character")
+
+           for key, value in input_mapping.items():
+                in_name = str(value[0])
+                image_filename = glob.glob(out + "/raw_output/" + in_name + "_strip*.png")
+                hurt_filename = glob.glob(out + "/raw_output/" + in_name + "_hurt_strip*.png")
+                attack_script = glob.glob(out + "/raw_output/" + in_name + ".gml")
+
+                if image_filename:
+                    image_filename = image_filename[0]
+                    frame_count = image_filename.split("_strip")[1].split(".")[0]
+                    output_filename = out + "/character/sprites/" + key + "_strip" + frame_count + ".png"
+                    shutil.copy2(image_filename, output_filename)
+
+                    if hurt_filename:
+                        hurt_filename = hurt_filename[0]
+                        output_filename = out + "/character/sprites/" + key + "_hurt_strip" + frame_count + ".png"
+                        shutil.copy2(hurt_filename, output_filename)
+                        
+                    if attack_script:
+                        attack_script = attack_script[0]
+                        output_filename = out + "/character/scripts/attacks/" + key + ".gml"
+                        shutil.copy2(attack_script, output_filename)
+                        with open(output_filename, 'r') as file:
+                            filedata = file.read()
+                            filedata = filedata.replace(in_name, key)
+                            filedata = filedata.replace("_" + key, "_" + key.upper())
+                        with open(output_filename, 'w') as file:
+                            file.write(filedata)
+
+    def create_character_folders(self, out):
+        os.mkdir(out + "/scripts")
+        os.mkdir(out + "/scripts/attacks")
+        os.mkdir(out + "/sounds")
+        os.mkdir(out + "/sprites")
 
 class RivalsAnimation:
     def __init__(self, name):

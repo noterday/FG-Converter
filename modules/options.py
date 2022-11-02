@@ -13,7 +13,7 @@ def parse_arguments(optlist, args):
             print_help()
             exit()
         elif option in ['-m', '--mapping']:
-            button_mapping_file = value
+            button_mapping_file = value.lstrip()
         elif option in ['-o', '--output']:
             chosen_output = value
         elif option in ['-v', '--verbose']:
@@ -83,3 +83,18 @@ def guess_input_type(input_folder):
         if file.endswith(".def"):
             return "mugen"
     raise Exception("Error: Invalid input folder.")
+
+def parse_button_mapping():
+    global button_mapping_file
+    input_mapping = {}
+    
+    f = open(button_mapping_file)
+    lines = f.readlines()
+    for line in lines:
+        line = line.split(';')[0].strip().replace(" ", "")
+        if '=' in line:
+            in_name, out_name = line.split('=')
+            out_name = out_name.split(',')
+            out_name[0] = int(out_name[0])
+            input_mapping[in_name] = out_name
+    return input_mapping

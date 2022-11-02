@@ -19,10 +19,6 @@ if __name__ == "__main__":
         options.output_folder += str(counter)
     os.mkdir(options.output_folder)
 
-    # Printout the folder structure
-    print("Saving the converted files to '" + options.output_folder + "/raw_output'")
-    if options.button_mapping_file:
-        print("Input mapping given, the converted character will be saved to '" + options.output_folder + "/character'")
 
     # Create the input character object
     if options.input_engine == "rivals":

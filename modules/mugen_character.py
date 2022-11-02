@@ -129,7 +129,6 @@ class MugenCharacter():
                 animations[current_action_nb].animation_elements.append(MugenAnimationElement())
                 animations[current_action_nb].animation_elements[-1].clsn1 = stored_clsn1
                 animations[current_action_nb].animation_elements[-1].clsn2 = stored_clsn2
-                #    self.optional_parameters = ""
                 values = line.split(',')
                 if (values[0], values[1]) in self.sprites:
                     animations[current_action_nb].animation_elements[-1].group_number = values[0]
@@ -159,16 +158,19 @@ class MugenCharacter():
     def convert_to_rivals(self):
         out = options.output_folder
         
-        # Create the rivals character object
+        # Create and printout the output folder structure
         os.mkdir(out + "/raw_output")
-
+        print("Saving the converted files to '" + options.output_folder + "/raw_output'")
+        
         path = os.path.dirname(__file__)
         final_character = RivalsCharacter()
-        # Do all the conversion work here
+
+        # Handle the conversion
         self.create_rivals_config_ini(final_character)
         load_gml_offset = self.create_rivals_animation_sheets(out)
-        self.convert_rivals_animations_and_attacks(final_character, load_gml_offset)
+        self.create_rivals_animations_and_attacks(final_character, load_gml_offset)
         final_character.unparse_attack_scripts(out)
+        final_character.create_mapped_character(out)
         return final_character
 
     # Converts the config.ini file based on information from the .def file
@@ -178,20 +180,6 @@ class MugenCharacter():
         final_character.config_ini["author"] = def_file_info_section["author"]
         final_character.config_ini["description"] = (
             '"This character is a conversion from Mugen. Original author: ' + def_file_info_section["author"].replace('"', '') + '"')
-
-    # Reads the input mapping file if one was given
-    def read_input_mapping_file(self, input_mapping_file):
-        input_mapping = {}
-        f = open(input_mapping_file)
-        lines = f.readlines()
-        for line in lines:
-            line = line.split(';')[0].strip().replace(" ", "")
-            if '=' in line:
-                rival_name, mugen_number = line.split('=')
-                mugen_number = mugen_number.split(',')
-                mugen_number[0] = int(mugen_number[0])
-                input_mapping[rival_name] = mugen_number
-        return input_mapping
 
     # Converts the animations to the Rivals spritesheet format
     def create_rivals_animation_sheets(self, out):
@@ -238,7 +226,6 @@ class MugenCharacter():
             # Create the final image file
             spritesheet = Image.new('RGBA', (biggest_image_dimensions[0]*len(images), biggest_image_dimensions[1]), (0,0,0,0))
             # Paste the elements into the new spritesheet
-            left_adjust = 0 # Idk~
             for i in range(len(animation.animation_elements)):
                 image = images[i]
                 element = animation.animation_elements[i]
@@ -271,7 +258,7 @@ class MugenCharacter():
         return offsets
 
     # Converts the animation and attack scripts to Rivals formats
-    def convert_rivals_animations_and_attacks(self, final_character, load_gml_offset):
+    def create_rivals_animations_and_attacks(self, final_character, load_gml_offset):
         for animation_number, animation_obj in self.animations.items():
             if animation_number == 9960:
                 break # todo: find why this one breaks
