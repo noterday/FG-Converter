@@ -3,7 +3,7 @@ from io import BytesIO
 from PIL import Image
 
 import modules.options as options
-import SFFv2
+import modules.sff.SFFv2
 
 
 """

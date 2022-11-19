@@ -4,7 +4,7 @@ from PIL import Image
 
 from modules.rivals_character import RivalsCharacter, RivalsAnimation
 import modules.options as options
-import modules.sff as sff
+import modules.sff.sff as sff
 
 SIZE_LIMIT = 10000 # Max image size in pixel. Temp value to avoid rare PIL crashes.
 
