@@ -9,6 +9,7 @@ def parse_arguments(optlist, args):
     
     default_palette = 1
     button_mapping_file = None
+    chosen_output = None
     verbose = None
 
     # Parsing the options
@@ -26,9 +27,11 @@ def parse_arguments(optlist, args):
             default_palette = int(value.lstrip())
 
     # Parse the argument (should be the input folder)
-    if len(args) != 1:
+    if len(args) > 1:
         print_help()
         exit()
+    elif len(args) == 0:
+        input_folder = prompt_for_folder()
     else:
         input_folder = args[0]
 
@@ -52,30 +55,30 @@ def parse_arguments(optlist, args):
 
 # Outputs an help message
 def print_help():
-    print('USAGE: fg-converter [-h][-m <file>][-o <value>] <input>')
+    print('USAGE: fg-converter [-h][-v][-p][-m <file>][-o <index>] <input>')
     print("")
     print("-h, --help")
     print("     Print this help")
+    print("")
+    print("-v, --verbose")
+    print("     Display additional progress and error information.")
+    print("")
+    print("-p <index> --palette=<index>")
+    print("     The default palette index to use for sprites in the input.")
     print("")
     print("-m <file>, --mapping=<file>")
     print("     A text file mapping animation names from the input to the output engine.")
     print("     If given, a structured character folder for the output engine will be generated.")
     print("")
-    print("-o <value>, --output=<value>")
-    print("     The game engine to convert toward :")
+    print("-o <index>, --output=<index>")
+    print("     The output game engine :")
     print("         1. Rivals of Aether")
     print("         2. Mugen (work-in-progress)")
     print("")
-    print("-p <index> --palette=<index>")
-    print("     The index of the palette to use as the default color.")
-    print("")
-    print("-v, --verbose")
-    print("     Displays additional progress and error information.")
-    print("")
     print("<input>")
     print("     The root directory of the character to be converted.")
-    print("     For Mugen inputs, the directory must contain a .def file")
-    print("     For Rivals inputs, the directory must contain a config.ini file")
+    print("     For Mugen characters, the directory must contain a .def file")
+    print("     For Rivals characters, the directory must contain a config.ini file")
 
 
 # Asks to chose an output engine
@@ -86,15 +89,19 @@ def prompt_for_output_type():
     print("")
     return input("Enter: ")
 
+def prompt_for_folder():
+    return input("Enter the input character data path :")
 
 # Determines the game engine used in the input folder from it's file extensions
 def guess_input_type(input_folder):
+    if not os.path.isdir(input_folder):
+        raise Exception("Error: Input is not a directory.")
     for file in os.listdir(input_folder):
         if file.endswith("config.ini"):
             return "rivals"
         if file.endswith(".def"):
             return "mugen"
-    raise Exception("Error: Invalid input folder.")
+    raise Exception("Error: Input folder is not a recognizable character data folder.")
 
 def parse_button_mapping():
     global button_mapping_file
