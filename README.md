@@ -33,8 +33,3 @@ Reference the 'button_mapping.ini' file for an example of button mapping for a R
 Input references: 
 [Mugen Action Numbers](http://www.elecbyte.com/mugendocs-11b1/air.html#character-reserved-action-numbers), [Rivals of Aether Animation Names](https://rivalsofaether.com/animation-names/).
 
-## TODO
-- [ ] Better handling of Mugen .sff file + handling of Mugen color palettes
-- [ ] Conversion of sound effects
-- [ ] Add reverse conversion (from Rivals to Mugen)
-- [ ] Support for other games (Fraymaker on release or anything else that is requested)
